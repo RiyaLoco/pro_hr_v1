@@ -1,7 +1,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:get/route_manager.dart';
-import 'package:test_flutter/features/authentication/screens/onboarding/onboarding.dart';
+import 'package:test_flutter/routes/app_pages.dart';
+import 'package:test_flutter/routes/app_routes.dart';
 
 void main() {
   runApp(const MyApp());
@@ -18,10 +19,11 @@ class MyApp extends StatelessWidget {
       title: 'Flutter Demo',
       theme: ThemeData(
         fontFamily: 'Poppins',
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
       ),
-      home: OnboardingScreen(),
+      // home: OnboardingScreen(),
+      initialRoute: AppRoutes.onboarding,
+      getPages: AppPages.pages,
       
     );
   }

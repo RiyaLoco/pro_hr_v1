@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:iconsax/iconsax.dart';
+import 'package:test_flutter/common/widgets/menu_items.dart';
 import 'package:test_flutter/utils/constants/colors.dart';
 
 class MenuGrid extends StatelessWidget {
@@ -8,12 +9,20 @@ class MenuGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = [
-      {'icon': Iconsax.people, 'label': 'Attendance'},
-      {'icon': Iconsax.clock, 'label': 'Overtimes'},
-      {'icon': Iconsax.calendar_1, 'label': 'Schedule'},
-      {'icon': Iconsax.message_question, 'label': 'Request'},
-      {'icon': Iconsax.task, 'label': 'Missions'},
-      {'icon': Iconsax.document_text_1, 'label': 'Reports'},
+      {'icon': Iconsax.people, 'label': 'Attendance', 'route': '/attendance'},
+      {'icon': Iconsax.clock, 'label': 'Overtimes', 'route': '/overtimes'},
+      {'icon': Iconsax.calendar_1, 'label': 'Schedule', 'route': '/schedule'},
+      {
+        'icon': Iconsax.message_question,
+        'label': 'Request',
+        'route': '/request',
+      },
+      {'icon': Iconsax.task, 'label': 'Missions', 'route': '/missions'},
+      {
+        'icon': Iconsax.document_text_1,
+        'label': 'Reports',
+        'route': '/reports',
+      },
     ];
 
     return Container(
@@ -34,26 +43,10 @@ class MenuGrid extends StatelessWidget {
         itemCount: items.length,
         itemBuilder: (context, index) {
           final item = items[index];
-          final icon = item['icon'] as IconData?;
-          final label = item['label'] as String;
-          return Container(
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (icon != null) Icon(icon, color: PColor.primary, size: 40),
-                if (icon != null) const SizedBox(height: 8),
-                if (label.isNotEmpty)
-                  Text(label,
-                      style: const TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: PColor.primary)),
-              ],
-            ),
+          return MenuItems(
+            icon: item['icon'] as IconData,
+            label: item['label'] as String,
+            route: item['route'] as String,
           );
         },
       ),

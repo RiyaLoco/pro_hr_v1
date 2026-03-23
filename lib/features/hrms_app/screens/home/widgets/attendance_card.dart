@@ -26,59 +26,96 @@ class AttendanceCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Center(
-            child: Text('Attendance Check',
-                style: TextStyle(
-                    color: PColor.primary,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold)),
+            child: Text(
+              'Attendance Check',
+              style: TextStyle(
+                color: PColor.primary,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
           const SizedBox(height: 10),
           Row(
             children: [
               Expanded(
-                child: Obx(() => Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(controller.currentTime.value,
-                            style: TextStyle(
-                                color: PColor.primary,
-                                fontSize: 36,
-                                fontWeight: FontWeight.bold)),
-                        Text(controller.currentDate.value,
-                            style: TextStyle(
-                                color: Colors.grey[500], fontSize: 13)),
-                        const SizedBox(height: 16),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            _TimeInfo(time: '9:00 AM', label: 'Check in'),
-                            _TimeInfo(time: '9:00 AM', label: 'Check out'),
-                            _TimeInfo(time: '9:00 AM', label: 'Times Working'),
-                          ],
+                child: Obx(
+                  () => Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        controller.currentTime.value,
+                        style: TextStyle(
+                          color: PColor.primary,
+                          fontSize: 36,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        controller.currentDate.value,
+                        style: TextStyle(color: Colors.grey[500], fontSize: 13),
+                      ),
+                      const SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          _TimeInfo(
+                            time: controller.checkInTime.value.isEmpty
+                                ? '--:--'
+                                : controller.checkInTime.value,
+                            label: 'Check in',
+                          ),
+                          _TimeInfo(
+                            time: controller.checkOutTime.value.isEmpty
+                                ? '--:--'
+                                : controller.checkOutTime.value,
+                            label: 'Check out',
+                          ),
+                          _TimeInfo(
+                            time: controller.timeWorking.value.isEmpty
+                                ? '--:--'
+                                : controller.timeWorking.value,
+                            label: 'Times Working',
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Obx(
+                () => GestureDetector(
+                  onTap: controller.onPunchTap,
+                  child: AnimatedContainer(
+                    duration: Duration(milliseconds: 300),
+                    width: 92,
+                    height: 92,
+                    decoration: BoxDecoration(
+                      color: controller.isPunchedIn.value
+                          ? Colors.redAccent.withOpacity(0.7)
+                          : PColor.primary.withOpacity(0.6),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: controller.isPunchedIn.value
+                              ? Colors.redAccent.withOpacity(0.3)
+                              : PColor.primary.withOpacity(0.3),
+                          blurRadius: 16,
+                          spreadRadius: 4,
                         ),
                       ],
-                    )),
-              ),
-              Container(
-                width: 90,
-                height: 90,
-                decoration: BoxDecoration(
-                  color: PColor.primary.withOpacity(0.6),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: PColor.primary.withOpacity(0.3),
-                      blurRadius: 16,
-                      spreadRadius: 4,
                     ),
-                  ],
-                ),
-                child: const Center(
-                  child: Text('Punch In',
-                      style: TextStyle(
+                    child: Center(
+                      child: Text(
+                        controller.isPunchedIn.value ? 'Punch Out' : 'Punch In',
+                        style: TextStyle(
                           color: Colors.white,
                           fontSize: 15,
-                          fontWeight: FontWeight.w600)),
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -104,11 +141,14 @@ class _TimeInfo extends StatelessWidget {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(time,
-                style:
-                    const TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
-            Text(label,
-                style: TextStyle(fontSize: 10, color: Colors.grey[500])),
+            Text(
+              time,
+              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+            ),
+            Text(
+              label,
+              style: TextStyle(fontSize: 10, color: Colors.grey[500]),
+            ),
           ],
         ),
       ],

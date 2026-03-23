@@ -20,7 +20,7 @@ class HomeScreen extends StatelessWidget {
         controller: controller.scrollController,
         slivers: [
           const CustomSliverAppBar(
-            title: 'Hello, Riya !',
+            title: 'Hello, Riya!',
             subtitle: 'Mobile Developer',
             image: ImageString.profile1,
             isShowProfile: true,

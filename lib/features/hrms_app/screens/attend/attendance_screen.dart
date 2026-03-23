@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:get/get_instance/src/extension_instance.dart';
 import 'package:test_flutter/common/widgets/custom_sliver_appbar.dart';
+import 'package:test_flutter/features/hrms_app/screens/home/widgets/attendance_card.dart';
+import 'package:test_flutter/features/hrms_app/screens/home/widgets/home_menu_grid.dart';
+import 'package:test_flutter/features/hrms_app/screens/home/widgets/recruitment_section.dart';
 
 import '../../controllers/home_controller.dart';
 
@@ -26,7 +29,13 @@ class AttendanceScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-               
+                  const AttendanceCard(),
+                  const SizedBox(height: 20),
+                  const MenuGrid(),
+                  const SizedBox(height: 24),
+                  const RecruitmentSection(),
+                  const SizedBox(height: 24),
+                  const RecruitmentSection(),
                 ],
               ),
             ),

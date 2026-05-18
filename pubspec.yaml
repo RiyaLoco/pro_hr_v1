@@ -45,6 +45,7 @@ dependencies:
   smooth_page_indicator: ^1.2.1
   carousel_slider: ^5.1.2
   google_fonts: ^6.3.0
+  dio: ^5.9.2
 
 dev_dependencies:
   flutter_test:

@@ -147,6 +147,7 @@ Widget build(BuildContext context) {
     floating: false,
     pinned: true,
     automaticallyImplyLeading: false,
+    toolbarHeight: kToolbarHeight,
     title: Obx(() => controller.isCollapsed.value
         ? AppBarContent.collapsed(
             title: title,

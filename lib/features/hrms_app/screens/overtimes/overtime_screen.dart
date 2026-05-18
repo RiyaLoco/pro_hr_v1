@@ -17,7 +17,7 @@ class OvertimeScreen extends StatelessWidget {
       body: CustomScrollView(
         slivers: [
           CustomSliverAppBar(
-            title: 'Overtimes',
+            title: 'Leave',
             subtitle: controller.currentDate.value,
             isShowProfile: false,
           ),

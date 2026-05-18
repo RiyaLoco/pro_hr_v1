@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:iconsax/iconsax.dart';
 import 'package:test_flutter/features/authentication/controllers/login_controller.dart';
-import 'package:test_flutter/features/hrms_app/screens/home/home_screen.dart';
 import 'package:test_flutter/utils/constants/colors.dart';
 import 'package:test_flutter/utils/constants/image_string.dart';
 import 'package:test_flutter/utils/constants/size.dart';
@@ -43,13 +42,15 @@ class LoginScreen extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w500,
-                    color: PColor.primary.withOpacity(0.7),
+                    color: PColor.primary.withValues(alpha: 0.7),
                   ),
                 ),
                 SizedBox(height: Sizes.spaceBtwSections),
                 SizedBox(
                   height: 80,
                   child: TextFormField(
+                    controller: controller.emailController,
+                    keyboardType: TextInputType.emailAddress,
                     decoration: InputDecoration(
                       filled: true,
                       fillColor: PColor.textFormFileColor,
@@ -73,7 +74,8 @@ class LoginScreen extends StatelessWidget {
                   height: 80,
                   child: Obx(
                     () => TextFormField(
-                      focusNode: FocusNode(),
+                      controller: controller.passwordController,
+                      focusNode: controller.passwordFocusNode,
                       obscureText: controller.isPasswordHidden.value,
                       decoration: InputDecoration(
                         filled: true,
@@ -89,7 +91,7 @@ class LoginScreen extends StatelessWidget {
                                 : Iconsax.eye,
                             color: PColor.subTitleColor,
                           ),
-                          onPressed: (){
+                          onPressed: () {
                             controller.togglePasswordVisibility();
                           },
                         ),
@@ -110,21 +112,34 @@ class LoginScreen extends StatelessWidget {
                 SizedBox(
                   height: 60,
                   width: double.infinity,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: PColor.primary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
+                  child: Obx(
+                    () => ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: PColor.primary,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
-                    ),
-                    onPressed: () => Get.off(HomeScreen()),
-                    child: Text(
-                      "Login",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                      ),
+                      onPressed: controller.isLoading.value
+                          ? null
+                          : controller.login,
+                      child: controller.isLoading.value
+                          ? SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Text(
+                              "Login",
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                                color: Colors.white,
+                              ),
+                            ),
                     ),
                   ),
                 ),

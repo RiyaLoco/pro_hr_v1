@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:iconsax/iconsax.dart';
 
 class AppBarContent extends StatelessWidget {
   final double avatarRadius;
@@ -136,7 +135,7 @@ class AppBarContent extends StatelessWidget {
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: nameFontSize,
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                   Text(

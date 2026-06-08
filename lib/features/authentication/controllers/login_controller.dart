@@ -1,8 +1,10 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:test_flutter/data/models/res/user_models.dart';
 import 'package:test_flutter/data/services/api_controller.dart';
 import 'package:test_flutter/features/hrms_app/screens/home/home_screen.dart';
+import 'package:test_flutter/routes/app_routes.dart';
 
 class LoginController extends GetxController {
   final emailController = TextEditingController();
@@ -12,6 +14,8 @@ class LoginController extends GetxController {
 
   var isPasswordHidden = true.obs;
   var isLoading = false.obs;
+
+  final Rx<UserModels?> user = Rxn<UserModels?>(null);
 
   void togglePasswordVisibility() {
     isPasswordHidden.value = !isPasswordHidden.value;
@@ -31,7 +35,8 @@ class LoginController extends GetxController {
       final result = await apiController.login(email, password);
 
       if (result.isSuccess && result.token != null) {
-        Get.off(() => HomeScreen());
+        user.value = result;
+        Get.offAllNamed(AppRoutes.home);
         return;
       }
 

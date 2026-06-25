@@ -29,7 +29,7 @@ class HomeScreen extends StatelessWidget {
                 title: 'Hello, $userName',
                 subtitle: 'Mobile Developer',
                 image: userAvatar ?? ImageString.profile1,
-                isShowProfile: false,
+                isShowProfile: true,
               ),
               // Obx(() => SliverAppBar(
               //       backgroundColor: PColor.primary,

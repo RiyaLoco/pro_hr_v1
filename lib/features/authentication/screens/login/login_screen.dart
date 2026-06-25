@@ -11,7 +11,9 @@ class LoginScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.put(LoginController());
+    final LoginController controller = Get.isRegistered<LoginController>()
+        ? Get.find<LoginController>()
+        : Get.put(LoginController(), permanent: true);
     return Scaffold(
       body: SingleChildScrollView(
         child: SafeArea(

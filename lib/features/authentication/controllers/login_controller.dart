@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:test_flutter/data/models/res/user_models.dart';
 import 'package:test_flutter/data/services/api_controller.dart';
-import 'package:test_flutter/features/hrms_app/screens/home/home_screen.dart';
 import 'package:test_flutter/routes/app_routes.dart';
 
 class LoginController extends GetxController {

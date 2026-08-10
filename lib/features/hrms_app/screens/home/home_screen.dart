@@ -20,7 +20,7 @@ class HomeScreen extends StatelessWidget {
       backgroundColor: Colors.grey[100],
       body: Obx(() {
         final user = loginController.user.value;
-        final userName = user?.user?.username ?? user?.user?.username ?? 'Guest';
+        final userName = user?.user?.name ?? user?.user?.name ?? 'Guest';
         final userAvatar = user?.user?.avatar;
           return CustomScrollView(
             controller: controller.scrollController,

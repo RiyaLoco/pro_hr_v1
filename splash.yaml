@@ -1,13 +1,12 @@
 flutter_native_splash:
   color: "#FFFFFF"
   color_dark: "#272727"
-  image: assets/logo/prohr-light-mode.png
-  image_dark: assets/logo/prohr_dark-mode.png
+  image: assets/logo/telenet_logo.png
 
   android_12: 
     color: "#FFFFFF"
     color_dark: "#272727"
-    image: assets/logo/logo_android12.png
+    image: assets/logo/telnet_android_logo.png
     # image_dark: assets/logo/prohr_dark-mode.png
     icon_background_color: "#FFFFFF"              
     icon_background_color_dark: "#272727"

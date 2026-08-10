@@ -108,7 +108,7 @@ class AppBarContent extends StatelessWidget {
                 child: CircleAvatar(
                   radius: avatarRadius,
                   backgroundImage: image != null ? AssetImage(image!) : null,
-                  child: image == null
+                  child: image != null
                       ? Icon(
                           Icons.person,
                           color: Colors.white,

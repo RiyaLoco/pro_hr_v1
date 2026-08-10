@@ -27,7 +27,7 @@ class LoginScreen extends StatelessWidget {
               children: [
                 Image(
                   height: 100,
-                  width: 250,
+                  width: 270,
                   image: AssetImage(ImageString.logo),
                 ),
                 SizedBox(height: Sizes.spaceBtwItems),

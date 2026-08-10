@@ -88,8 +88,8 @@ class AttendanceCard extends StatelessWidget {
                   onTap: controller.onPunchTap,
                   child: AnimatedContainer(
                     duration: Duration(milliseconds: 300),
-                    width: 92,
-                    height: 92,
+                    width: 90,
+                    height: 90,
                     decoration: BoxDecoration(
                       color: controller.isPunchedIn.value
                           ? Colors.redAccent.withOpacity(0.7)
@@ -136,14 +136,14 @@ class _TimeInfo extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(Icons.access_time, size: 16, color: Colors.grey[600]),
+        Icon(Icons.access_time, size: 16, color: PColor.primary),
         const SizedBox(width: 4),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               time,
-              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+              style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600,color: PColor.textColor),
             ),
             Text(
               label,

@@ -1,6 +1,6 @@
 class  ImageString {
 
-  static const String logo = "assets/logo/prohr-logo.png";
+  static const String logo = "assets/logo/telenet_logo.png";
   static const String logoWhite = "assets/logo/prohr_dark-mode.png";
   static const String logoDark = "assets/logo/prohr-light-mode.png";
 

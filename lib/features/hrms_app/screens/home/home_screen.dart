@@ -7,6 +7,7 @@ import 'package:test_flutter/features/hrms_app/screens/home/widgets/attendance_c
 import 'package:test_flutter/features/hrms_app/screens/home/widgets/home_menu_grid.dart';
 import 'package:test_flutter/features/hrms_app/screens/home/widgets/recruitment_section.dart';
 import 'package:test_flutter/utils/constants/image_string.dart';
+import 'package:test_flutter/utils/constants/size.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -67,11 +68,11 @@ class HomeScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const AttendanceCard(),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: Sizes.spaceBtwItems),
                       const MenuGrid(),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: Sizes.spaceBtwItems),
                       const RecruitmentSection(),
-                      const SizedBox(height: 24),
+                      const SizedBox(height: Sizes.spaceBtwItems),
                       const RecruitmentSection(),
                     ],
                   ),

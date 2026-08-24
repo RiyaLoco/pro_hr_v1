@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:test_flutter/common/widgets/section_header.dart';
 import 'package:test_flutter/utils/constants/colors.dart';
 
 class RecruitmentSection extends StatelessWidget {
@@ -9,24 +10,13 @@ class RecruitmentSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text('Recruitment',
-                style: TextStyle(
-                    color: PColor.primary,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold)),
-            Text('View All',
-                style: TextStyle(color: Colors.grey[500], fontSize: 14)),
-          ],
-        ),
+        SectionHeader(title: 'Recruitment'),
         const SizedBox(height: 12),
         SizedBox(
           height: 160,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
-            itemCount: 3,
+            itemCount: 5,
             separatorBuilder: (_, _) => const SizedBox(width: 12),
             itemBuilder: (context, index) => Container(
               width: 140,

@@ -10,7 +10,7 @@ class MenuGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final items = [
       {'icon': Iconsax.people, 'label': 'Attendance', 'route': '/attendance'},
-      {'icon': Iconsax.logout, 'label': 'Leave', 'route': '/overtimes'},
+      {'icon': Iconsax.logout, 'label': 'Leave', 'route': '/leave'},
       {'icon': Iconsax.calendar_1, 'label': 'Schedule', 'route': '/schedule'},
       {
         'icon': Iconsax.message_question,

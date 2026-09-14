@@ -31,6 +31,7 @@ class User {
   final String? avatar;
   final int? employeeId;
   final String? role;
+  final String? avatarUrl;
 
   User({
     this.id,
@@ -42,6 +43,7 @@ class User {
     this.avatar,
     this.employeeId,
     this.role,
+    this.avatarUrl,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -55,6 +57,7 @@ class User {
       avatar: json['avatar']?.toString(),
       employeeId: _toInt(json['employee_id']),
       role: json['role']?.toString(),
+      avatarUrl: json['avatar_url']?.toString(),
     );
   }
 

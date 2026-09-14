@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:test_flutter/common/widgets/custom_sliver_appbar.dart';
+import 'package:test_flutter/data/services/app_url_service.dart';
 import 'package:test_flutter/features/authentication/controllers/login_controller.dart';
 import 'package:test_flutter/features/hrms_app/controllers/home_controller.dart';
 import 'package:test_flutter/features/hrms_app/screens/home/widgets/attendance_card.dart';
@@ -22,14 +23,14 @@ class HomeScreen extends StatelessWidget {
       body: Obx(() {
         final user = loginController.user.value;
         final userName = user?.user?.name ?? user?.user?.name ?? 'Guest';
-        final userAvatar = user?.user?.avatar;
+        final userAvatar = user?.user?.avatarUrl;
           return CustomScrollView(
             controller: controller.scrollController,
             slivers: [
                CustomSliverAppBar(
                 title: 'Hello, $userName',
                 subtitle: 'Mobile Developer',
-                image: userAvatar ?? ImageString.profile1,
+                image: userAvatar != null ? AppUrlService.fileUrl(userAvatar) : ImageString.profile1,
                 isShowProfile: true,
               ),
               // Obx(() => SliverAppBar(

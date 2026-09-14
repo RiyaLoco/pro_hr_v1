@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:test_flutter/data/services/app_url_service.dart';
 
 class AppBarContent extends StatelessWidget {
   final double avatarRadius;
@@ -30,6 +31,7 @@ class AppBarContent extends StatelessWidget {
   });
 
   factory AppBarContent.collapsed({
+    Key? key,
     required String title,
     required String subtitle,
     String? image,
@@ -38,6 +40,7 @@ class AppBarContent extends StatelessWidget {
     VoidCallback? onBackTap,
   }) {
     return AppBarContent(
+      key: key,
       avatarRadius: 20,
       nameFontSize: 16,
       roleFontSize: 11,
@@ -62,7 +65,7 @@ class AppBarContent extends StatelessWidget {
   }) {
     return AppBarContent(
       avatarRadius: 26,
-      nameFontSize: 20,
+      nameFontSize: 22,
       roleFontSize: 14,
       iconSize: 26,
       title: title,
@@ -81,7 +84,7 @@ class AppBarContent extends StatelessWidget {
   }) {
     return AppBarContent(
       avatarRadius: 0,
-      nameFontSize: 22,
+      nameFontSize: 17,
       roleFontSize: 14,
       iconSize: 0,
       title: title,
@@ -94,6 +97,8 @@ class AppBarContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final imageProvider = _imageProvider(image);
+
     return SafeArea(
       child: Padding(
         padding: padding,
@@ -104,11 +109,17 @@ class AppBarContent extends StatelessWidget {
             if (isShowProfile)
               CircleAvatar(
                 radius: avatarRadius + 2,
-                backgroundColor: Colors.white.withOpacity(0.3),
+                backgroundColor: Colors.white.withValues(alpha: 0.3),
                 child: CircleAvatar(
                   radius: avatarRadius,
-                  backgroundImage: image != null ? AssetImage(image!) : null,
-                  child: image != null
+                  backgroundColor: Colors.white.withValues(alpha: 0.3),
+                  backgroundImage: imageProvider,
+                  onBackgroundImageError: imageProvider != null
+                      ? (exception, stackTrace) {
+                          debugPrint('Avatar failed to load: $exception');
+                        }
+                      : null,
+                  child: imageProvider == null
                       ? Icon(
                           Icons.person,
                           color: Colors.white,
@@ -141,7 +152,7 @@ class AppBarContent extends StatelessWidget {
                   Text(
                     subtitle,
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.85),
+                      color: Colors.white.withValues(alpha: 0.85),
                       fontSize: roleFontSize,
                     ),
                   ),
@@ -162,5 +173,14 @@ class AppBarContent extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  ImageProvider? _imageProvider(String? image) {
+    if (image == null || image.trim().isEmpty) return null;
+
+    final path = image.trim();
+    if (path.startsWith('assets/')) return AssetImage(path);
+
+    return NetworkImage(AppUrlService.fileUrl(path));
   }
 }

@@ -31,77 +31,6 @@ class CustomSliverAppBar extends StatelessWidget {
     this.onNotificationTap,
     this.onBackTap,
   });
-
-//   @override
-//   Widget build(BuildContext context) {
-//     final controller = Get.find<HomeController>();
-//     final resolvedExpandedHeight =
-//         expandedHeight ?? controller.totalExpandedHeight;
-//     final resolvedCurveHeight =
-//         bottomCurveHeight ?? controller.bottomCurveHeight;
-
-//     return SliverAppBar(
-//       backgroundColor: backgroundColor ?? PColor.primary,
-//       expandedHeight: resolvedExpandedHeight,
-//       floating: false,
-//       pinned: true,
-//       automaticallyImplyLeading: false,
-
-//       title: isShowProfile
-//           ? Obx(
-//               () => controller.isCollapsed.value
-//                   ? AppBarContent.collapsed(
-//                       title: title,
-//                       subtitle: subtitle,
-//                       image: image,
-//                       isShowProfile: isShowProfile,
-//                       onNotificationTap: onNotificationTap,
-//                       onBackTap: onBackTap,
-//                     )
-//                   : const SizedBox.shrink(),
-//             )
-//           : AppBarContent.collapsed(
-//               title: title,
-//               subtitle: subtitle,
-//               isShowProfile: isShowProfile,
-//               onBackTap: onBackTap,
-//             ),
-
-//       flexibleSpace: FlexibleSpaceBar(
-//         titlePadding: EdgeInsets.zero,
-//         collapseMode: CollapseMode.pin,
-//         background: isShowProfile
-//             ? AppBarContent.expanded(
-//                 title: title,
-//                 subtitle: subtitle,
-//                 image: image,
-//                 isShowProfile: isShowProfile,
-//                 onNotificationTap: onNotificationTap,
-//               )
-//             : AppBarContent.detail(
-//                 title: title,
-//                 subtitle: subtitle,
-//                 onBackTap: onBackTap,
-//               ),
-//       ),
-
-//       bottom: PreferredSize(
-//         preferredSize: Size.fromHeight(resolvedCurveHeight),
-//         child: Container(
-//           height: resolvedCurveHeight,
-//           width: double.infinity,
-//           decoration: BoxDecoration(
-//             color: curveColor ?? Colors.grey[100],
-//             borderRadius: BorderRadius.only(
-//               topLeft: Radius.circular(curveRadius),
-//               topRight: Radius.circular(curveRadius),
-//             ),
-//           ),
-//         ),
-//       ),
-//     );
-//   }
-// }
 @override
 Widget build(BuildContext context) {
   final controller = Get.find<HomeController>();
@@ -110,7 +39,7 @@ Widget build(BuildContext context) {
   final resolvedCurveHeight =
       bottomCurveHeight ?? controller.bottomCurveHeight;
 
-  // ✅ Detail screen — no expand/collapse, simple fixed appbar
+  // Detail screen — no expand/collapse, simple fixed appbar
   if (!isShowProfile) {
     return SliverAppBar(
       backgroundColor: backgroundColor ?? PColor.primary,
@@ -140,7 +69,7 @@ Widget build(BuildContext context) {
     );
   }
 
-  // ✅ Home screen — expandable with profile avatar
+  // Home screen — expandable with profile avatar
   return SliverAppBar(
     backgroundColor: backgroundColor ?? PColor.primary,
     expandedHeight: resolvedExpandedHeight,
@@ -155,7 +84,7 @@ Widget build(BuildContext context) {
             image: image,
             isShowProfile: isShowProfile,
             onNotificationTap: onNotificationTap,
-            onBackTap: onBackTap,
+            onBackTap: onBackTap, 
           )
         : const SizedBox.shrink()),
     flexibleSpace: FlexibleSpaceBar(

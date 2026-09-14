@@ -42,10 +42,10 @@ class AttendanceController extends GetxController {
       records.value = List.generate(
         6,
         (index) => const AttendanceRecord(
-          date: 'June 15 , 2026',
-          checkIn: '7:58',
-          checkOut: '17:05',
-          status: 'ON-TIME',
+          date: '',
+          checkIn: '',
+          checkOut: '',
+          status: '',
         ),
       );
     } finally {

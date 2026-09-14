@@ -1,6 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:get/get_core/src/get_main.dart';
-import 'package:get/get_instance/src/extension_instance.dart';
 import 'package:test_flutter/common/widgets/app_container.dart';
 import 'package:test_flutter/features/hrms_app/controllers/attendance_controller.dart';
 import 'package:test_flutter/utils/constants/colors.dart';

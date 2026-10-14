@@ -13,11 +13,11 @@ class MenuGrid extends StatelessWidget {
       {'icon': Iconsax.logout, 'label': 'Leave', 'route': '/leave'},
       {'icon': Iconsax.calendar_1, 'label': 'Schedule', 'route': '/schedule'},
       {
-        'icon': Iconsax.message_question,
-        'label': 'Request',
-        'route': '/request',
+        'icon': Iconsax.clock,
+        'label': 'Overtime',
+        'route': '/overtime',
       },
-      {'icon': Iconsax.task, 'label': 'Missions', 'route': '/missions'},
+      {'icon': Iconsax.dollar_circle, 'label': 'Payroll', 'route': '/payroll'},
       {
         'icon': Iconsax.document_text_1,
         'label': 'Reports',

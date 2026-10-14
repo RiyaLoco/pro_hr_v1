@@ -29,7 +29,7 @@ class LeavingRequestScreen extends StatelessWidget {
           ),
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 0),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
               child: Obx(
                 () => Column(
                   crossAxisAlignment: CrossAxisAlignment.start,

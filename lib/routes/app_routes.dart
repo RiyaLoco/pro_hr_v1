@@ -5,7 +5,8 @@ abstract class AppRoutes {
   static const attendance = '/attendance';
   static const leave = '/leave';
   static const schedule = '/schedule';
-  static const request = '/request';
-  static const missions = '/missions';
+  static const overtime = '/overtime';
+  static const payroll = '/payroll';
   static const reports = '/reports';
+  static const profile = '/profile';
 }

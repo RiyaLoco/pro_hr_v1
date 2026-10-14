@@ -5,25 +5,51 @@ import 'package:get/get_navigation/src/extension_navigation.dart';
 import 'package:get/get_rx/src/rx_types/rx_types.dart';
 import 'package:get/get_state_manager/src/simple/get_controllers.dart';
 import 'package:test_flutter/features/hrms_app/controllers/leave_controller.dart';
+import 'package:test_flutter/features/hrms_app/screens/leave/widgets/selection_bottom_sheet.dart';
+import 'package:test_flutter/utils/constants/image_string.dart';
 
 /// Controller backing the Leaving Request form screen.
 class LeaveRequestController extends GetxController {
-  static const List<String> leaveTypeOptions = [
-    'Sick Leave',
-    'Casual Leave',
-    'Annual Leave',
-    'Unpaid Leave',
+  static const List<SelectionOption> timeOptions = [
+    SelectionOption(value: 'Full Day', title: 'Full Day'),
+    SelectionOption(value: 'Half Morning', title: 'Half Morning'),
+    SelectionOption(value: 'Half Afternoon', title: 'Half Afternoon'),
+    SelectionOption(value: 'Customize', title: 'Customize'),
   ];
 
-  static const List<String> authorizeOptions = [
-    'Team Lead',
-    'Project Manager',
-    'HR Manager',
+  static const List<SelectionOption> leaveTypeOptions = [
+    SelectionOption(value: 'Annual', title: 'Annual'),
+    SelectionOption(value: 'Sick', title: 'Sick'),
+    SelectionOption(value: 'Spacial', title: 'Spacial'),
+    SelectionOption(value: 'Unpaid Leave', title: 'Unpaid Leave'),
+  ];
+
+  // TODO: replace with real approvers (e.g. fetched from an API),
+  // including their actual avatar images instead of the placeholder.
+  static const List<SelectionOption> authorizeOptions = [
+    SelectionOption(
+      value: 'Mr Khiev Sovan',
+      title: 'Mr Khiev Sovan',
+      subtitle: 'HR Supervisor',
+      avatar: AssetImage(ImageString.profile1),
+    ),
+    SelectionOption(
+      value: 'Mr Sok chankungkea',
+      title: 'Mr Sok chankungkea',
+      subtitle: 'Chief Information Technology',
+      avatar: AssetImage(ImageString.profile1),
+    ),
+    SelectionOption(
+      value: 'Mr Reth Vathanak',
+      title: 'Mr Reth Vathanak',
+      subtitle: 'Information Technology Officer',
+      avatar: AssetImage(ImageString.profile1),
+    ),
   ];
 
   final TextEditingController reasonController = TextEditingController();
 
-  final Rx<TimeOfDay?> selectedTime = Rx<TimeOfDay?>(null);
+  final RxnString selectedTime = RxnString();
   final Rx<DateTime?> startDate = Rx<DateTime?>(null);
   final Rx<DateTime?> endDate = Rx<DateTime?>(null);
   final RxnString leaveType = RxnString();
@@ -31,8 +57,7 @@ class LeaveRequestController extends GetxController {
   final RxnString uploadedImagePath = RxnString();
   final RxBool isSubmitting = false.obs;
 
-  String get timeLabel =>
-      selectedTime.value == null ? 'Select time' : selectedTime.value!.format(Get.context!);
+  String get timeLabel => selectedTime.value ?? 'Select time';
 
   String get startDateLabel =>
       startDate.value == null ? 'Start Date' : _formatDate(startDate.value!);
@@ -42,12 +67,15 @@ class LeaveRequestController extends GetxController {
 
   String get leaveTypeLabel => leaveType.value ?? 'Select leave type';
 
-  String get certifyAuthorizeLabel => certifyAuthorize.value ?? 'Certify Authorize';
+  String get certifyAuthorizeLabel =>
+      certifyAuthorize.value ?? 'Certify Authorize';
 
   Future<void> pickTime(BuildContext context) async {
-    final result = await showTimePicker(
-      context: context,
-      initialTime: selectedTime.value ?? TimeOfDay.now(),
+    final result = await SelectionBottomSheet.show(
+      context,
+      title: 'Select time',
+      options: timeOptions,
+      selectedValue: selectedTime.value,
     );
     if (result != null) selectedTime.value = result;
   }
@@ -73,12 +101,22 @@ class LeaveRequestController extends GetxController {
   }
 
   Future<void> pickLeaveType(BuildContext context) async {
-    final result = await _showOptionsSheet(context, 'Select leave type', leaveTypeOptions);
+    final result = await SelectionBottomSheet.show(
+      context,
+      title: 'Select  leave type',
+      options: leaveTypeOptions,
+      selectedValue: leaveType.value,
+    );
     if (result != null) leaveType.value = result;
   }
 
   Future<void> pickCertifyAuthorize(BuildContext context) async {
-    final result = await _showOptionsSheet(context, 'Certify Authorize', authorizeOptions);
+    final result = await SelectionBottomSheet.show(
+      context,
+      title: 'Choose Certify Authorize',
+      options: authorizeOptions,
+      selectedValue: certifyAuthorize.value,
+    );
     if (result != null) certifyAuthorize.value = result;
   }
 
@@ -111,36 +149,6 @@ class LeaveRequestController extends GetxController {
     } finally {
       isSubmitting.value = false;
     }
-  }
-
-  Future<String?> _showOptionsSheet(
-    BuildContext context,
-    String title,
-    List<String> options,
-  ) {
-    return showModalBottomSheet<String>(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(16),
-              child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-            ),
-            ...options.map(
-              (option) => ListTile(
-                title: Text(option),
-                onTap: () => Navigator.of(context).pop(option),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   String _formatDate(DateTime date) => '${date.day}/${date.month}/${date.year}';

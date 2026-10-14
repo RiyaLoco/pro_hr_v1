@@ -26,7 +26,7 @@ class MenuItems extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: PColor.primary, size: 40),
+            Icon(icon, color: PColor.primary, size: 50),
             const SizedBox(height: 8),
             Text(
               label,

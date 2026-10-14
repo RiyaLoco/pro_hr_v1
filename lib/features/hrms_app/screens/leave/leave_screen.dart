@@ -6,6 +6,7 @@ import 'package:get/get_state_manager/src/rx_flutter/rx_obx_widget.dart';
 import 'package:test_flutter/common/widgets/custom_sliver_appbar.dart';
 import 'package:test_flutter/features/hrms_app/controllers/leave_controller.dart';
 import 'package:test_flutter/features/hrms_app/screens/leave/leaving_request_screen.dart';
+import 'package:test_flutter/features/hrms_app/screens/leave/widgets/tap_row.dart';
 import 'package:test_flutter/utils/constants/colors.dart';
 import 'package:test_flutter/utils/constants/size.dart';
 
@@ -35,8 +36,8 @@ class LeaveScreen extends StatelessWidget {
           ),
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 0),
-              child: _buildTabRow(controller),
+              padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 20),
+              child: TapRow(),
             ),
           ),
           SliverFillRemaining(
@@ -68,24 +69,7 @@ class LeaveScreen extends StatelessWidget {
   }
 
   // ---- Tabs ----
-  Widget _buildTabRow(LeaveController controller) {
-    return Obx(
-      () => Row(
-        children: [
-          for (final status in LeaveStatus.values) ...[
-            Expanded(
-              child: _TabPill(
-                label: status.label,
-                isSelected: controller.selectedTab.value == status,
-                onTap: () => controller.changeTab(status),
-              ),
-            ),
-            if (status != LeaveStatus.values.last) const SizedBox(width: 10),
-          ],
-        ],
-      ),
-    );
-  }
+
 
   // ---- Empty state ----
   Widget _buildEmptyState() {
@@ -113,59 +97,7 @@ class LeaveScreen extends StatelessWidget {
   }
 }
 
-class _TabPill extends StatelessWidget {
-  final String label;
-  final bool isSelected;
-  final VoidCallback onTap;
- 
-  const _TabPill({
-    required this.label,
-    required this.isSelected,
-    required this.onTap,
-  });
- 
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOut,
-          alignment: Alignment.center,
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(
-            color: isSelected ? PColor.primary : Colors.white,
-            borderRadius: BorderRadius.circular(15),
-            border: Border.all(
-              color: isSelected ? PColor.primary : PColor.primary.withOpacity(0.4),
-            ),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: PColor.primary.withOpacity(0.25),
-                      blurRadius: 8,
-                      offset: const Offset(0, 3),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Text(
-            label,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: isSelected ? Colors.white : PColor.primary,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
+
 
 class _LeaveRequestTile extends StatelessWidget {
   final LeaveRequest request;

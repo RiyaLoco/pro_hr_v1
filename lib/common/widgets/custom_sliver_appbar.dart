@@ -5,8 +5,8 @@ import 'package:test_flutter/features/hrms_app/controllers/home_controller.dart'
 import 'package:test_flutter/utils/constants/colors.dart';
 
 class CustomSliverAppBar extends StatelessWidget {
-  final String title;
-  final String subtitle;
+  final String? title;
+  final String? subtitle;
   final String? image;
   final bool isShowProfile;
   final Color? backgroundColor;
@@ -19,8 +19,8 @@ class CustomSliverAppBar extends StatelessWidget {
 
   const CustomSliverAppBar({
     super.key,
-    required this.title,
-    required this.subtitle,
+    this.title,
+    this.subtitle,
     this.image,
     this.isShowProfile = true,
     this.backgroundColor,
@@ -36,8 +36,6 @@ Widget build(BuildContext context) {
   final controller = Get.find<HomeController>();
   final resolvedExpandedHeight =
       expandedHeight ?? controller.totalExpandedHeight;
-  final resolvedCurveHeight =
-      bottomCurveHeight ?? controller.bottomCurveHeight;
 
   // Detail screen — no expand/collapse, simple fixed appbar
   if (!isShowProfile) {
@@ -48,24 +46,24 @@ Widget build(BuildContext context) {
       automaticallyImplyLeading: false,
       toolbarHeight: 70,
       title: AppBarContent.detail(
-        title: title,
-        subtitle: subtitle,
+        title: title ?? '',
+        subtitle: subtitle ?? '',
         onBackTap: onBackTap,
       ),
-      bottom: PreferredSize(
-        preferredSize: Size.fromHeight(resolvedCurveHeight),
-        child: Container(
-          height: resolvedCurveHeight,
-          width: double.infinity,
-          decoration: BoxDecoration(
-            color: curveColor ?? Colors.grey[100],
-            borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(curveRadius),
-              topRight: Radius.circular(curveRadius),
-            ),
-          ),
-        ),
-      ),
+      // bottom: PreferredSize(
+      //   preferredSize: Size.fromHeight(resolvedCurveHeight),
+      //   child: Container(
+      //     height: resolvedCurveHeight,
+      //     width: double.infinity,
+      //     decoration: BoxDecoration(
+      //       color: curveColor ?? Colors.grey[100],
+      //       borderRadius: BorderRadius.only(
+      //         topLeft: Radius.circular(curveRadius),
+      //         topRight: Radius.circular(curveRadius),
+      //       ),
+      //     ),
+      //   ),
+      // ),
     );
   }
 
@@ -79,8 +77,8 @@ Widget build(BuildContext context) {
     toolbarHeight: kToolbarHeight,
     title: Obx(() => controller.isCollapsed.value
         ? AppBarContent.collapsed(
-            title: title,
-            subtitle: subtitle,
+            title: title ?? '',
+            subtitle: subtitle ?? '',
             image: image,
             isShowProfile: isShowProfile,
             onNotificationTap: onNotificationTap,
@@ -91,28 +89,28 @@ Widget build(BuildContext context) {
       titlePadding: EdgeInsets.zero,
       collapseMode: CollapseMode.parallax,
       background: AppBarContent.expanded(
-        title: title,
-        subtitle: subtitle,
+        title: title ?? '',
+        subtitle: subtitle ?? '',
         image: image,
         isShowProfile: isShowProfile,
         onNotificationTap: onNotificationTap,
         onBackTap: onBackTap,
       ),
     ),
-    bottom: PreferredSize(
-      preferredSize: Size.fromHeight(resolvedCurveHeight),
-      child: Container(
-        height: resolvedCurveHeight,
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: curveColor ?? Colors.grey[100],
-          borderRadius: BorderRadius.only(
-            topLeft: Radius.circular(curveRadius),
-            topRight: Radius.circular(curveRadius),
-          ),
-        ),
-      ),
-    ),
+    // bottom: PreferredSize(
+    //   preferredSize: Size.fromHeight(resolvedCurveHeight),
+    //   child: Container(
+    //     height: resolvedCurveHeight,
+    //     width: double.infinity,
+    //     decoration: BoxDecoration(
+    //       color: curveColor ?? Colors.grey[100],
+    //       borderRadius: BorderRadius.only(
+    //         topLeft: Radius.circular(curveRadius),
+    //         topRight: Radius.circular(curveRadius),
+    //       ),
+    //     ),
+    //   ),
+    // ),
   );
 }
 }

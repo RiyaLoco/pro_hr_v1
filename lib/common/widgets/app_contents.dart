@@ -99,77 +99,80 @@ class AppBarContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final imageProvider = _imageProvider(image);
 
-    return SafeArea(
-      child: Padding(
-        padding: padding,
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // Avatar
-            if (isShowProfile)
-              CircleAvatar(
-                radius: avatarRadius + 2,
-                backgroundColor: Colors.white.withValues(alpha: 0.3),
-                child: CircleAvatar(
-                  radius: avatarRadius,
+    return GestureDetector(
+      onTap: () => Get.toNamed('/profile'),
+      child: SafeArea(
+        child: Padding(
+          padding: padding,
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Avatar
+              if (isShowProfile)
+                CircleAvatar(
+                  radius: avatarRadius + 2,
                   backgroundColor: Colors.white.withValues(alpha: 0.3),
-                  backgroundImage: imageProvider,
-                  onBackgroundImageError: imageProvider != null
-                      ? (exception, stackTrace) {
-                          debugPrint('Avatar failed to load: $exception');
-                        }
-                      : null,
-                  child: imageProvider == null
-                      ? Icon(
-                          Icons.person,
-                          color: Colors.white,
-                          size: avatarRadius,
-                        )
-                      : null,
+                  child: CircleAvatar(
+                    radius: avatarRadius,
+                    backgroundColor: Colors.white.withValues(alpha: 0.3),
+                    backgroundImage: imageProvider,
+                    onBackgroundImageError: imageProvider != null
+                        ? (exception, stackTrace) {
+                            debugPrint('Avatar failed to load: $exception');
+                          }
+                        : null,
+                    child: imageProvider == null
+                        ? Icon(
+                            Icons.person,
+                            color: Colors.white,
+                            size: avatarRadius,
+                          )
+                        : null,
+                  ),
+                )
+              else
+                IconButton(
+                  icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+                  onPressed: onBackTap ?? () => Get.back(),
                 ),
-              )
-            else
+              const SizedBox(width: 12),
+      
+              // Name + Role
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: nameFontSize,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    Text(
+                      subtitle,
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.85),
+                        fontSize: roleFontSize,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+      
+              // Notification Icon
               IconButton(
-                icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
-                onPressed: onBackTap ?? () => Get.back(),
+                icon: Icon(
+                  Icons.notifications_outlined,
+                  color: Colors.white,
+                  size: iconSize,
+                ),
+                onPressed: onNotificationTap ?? () {},
               ),
-            const SizedBox(width: 12),
-
-            // Name + Role
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontSize: nameFontSize,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.85),
-                      fontSize: roleFontSize,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Notification Icon
-            IconButton(
-              icon: Icon(
-                Icons.notifications_outlined,
-                color: Colors.white,
-                size: iconSize,
-              ),
-              onPressed: onNotificationTap ?? () {},
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

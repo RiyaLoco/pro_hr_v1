@@ -5,9 +5,10 @@ import 'package:test_flutter/features/authentication/screens/onboarding/onboardi
 import 'package:test_flutter/features/hrms_app/screens/attend/attendance_screen.dart';
 import 'package:test_flutter/features/hrms_app/screens/home/home_screen.dart';
 import 'package:test_flutter/features/hrms_app/screens/leave/leave_screen.dart';
-import 'package:test_flutter/features/hrms_app/screens/missions/mission_screen.dart';
+import 'package:test_flutter/features/hrms_app/screens/payroll/payroll_screen.dart';
+import 'package:test_flutter/features/hrms_app/screens/profile/profile_screen.dart';
 import 'package:test_flutter/features/hrms_app/screens/reports/report_screen.dart';
-import 'package:test_flutter/features/hrms_app/screens/request/request_screen.dart';
+import 'package:test_flutter/features/hrms_app/screens/overtime/overtime_screen.dart';
 import 'package:test_flutter/features/hrms_app/screens/schedule/schedule_screen.dart';
 import 'app_routes.dart';
 
@@ -19,8 +20,9 @@ class AppPages {
     GetPage(name: AppRoutes.attendance, page: () => const AttendanceScreen()),
     GetPage(name: AppRoutes.leave, page: () => const LeaveScreen()),
     GetPage(name: AppRoutes.schedule, page: () => const ScheduleScreen()),
-    GetPage(name: AppRoutes.request, page: () => const RequestScreen()),
-    GetPage(name: AppRoutes.missions, page: () => const MissionScreen()),
+    GetPage(name: AppRoutes.overtime, page: () => const OvertimeScreen()),
+    GetPage(name: AppRoutes.payroll, page: () => const PayrollScreen()),
     GetPage(name: AppRoutes.reports, page: () => const ReportScreen()),
+    GetPage(name: AppRoutes.profile, page: () => const ProfileScreen()),
   ];
 }

@@ -16,7 +16,7 @@ class PayrollScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final homeController = Get.find<HomeController>();
-    final payrollController = Get.put(PayRollController());
+    Get.put(PayRollController());
 
     return Scaffold(
       backgroundColor: Colors.grey[100],

@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:get/get_core/src/get_main.dart';
-import 'package:get/get_instance/src/extension_instance.dart';
-import 'package:get/get_state_manager/src/rx_flutter/rx_obx_widget.dart';
+import 'package:get/get.dart';
 import 'package:test_flutter/common/widgets/custom_sliver_appbar.dart';
 import 'package:test_flutter/features/hrms_app/controllers/leave_request_controller.dart';
 import 'package:test_flutter/features/hrms_app/screens/leave/widgets/leave_form.dart';
@@ -29,17 +27,11 @@ class LeavingRequestScreen extends StatelessWidget {
           ),
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+              padding: const EdgeInsets.all(16),
               child: Obx(
                 () => Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    LeaveFormField(
-                      icon: Icons.access_time,
-                      label: controller.timeLabel,
-                      onTap: () => controller.pickTime(context),
-                    ),
-                    const SizedBox(height: Sizes.spaceBtwItems),
                     Row(
                       children: [
                         Expanded(
@@ -68,18 +60,7 @@ class LeavingRequestScreen extends StatelessWidget {
                       onTap: () => controller.pickLeaveType(context),
                     ),
                     const SizedBox(height: Sizes.spaceBtwItems),
-                    LeaveFormField(
-                      icon: Icons.verified_user_outlined,
-                      label: controller.certifyAuthorizeLabel,
-                      onTap: () => controller.pickCertifyAuthorize(context),
-                    ),
-                    const SizedBox(height: Sizes.spaceBtwItems),
                     LeaveTextAreaField(controller: controller.reasonController),
-                    const SizedBox(height: Sizes.spaceBtwItems),
-                    LeaveUploadField(
-                      label: controller.uploadedImagePath.value ?? 'Upload Image',
-                      onTap: controller.pickImage,
-                    ),
                     const SizedBox(height: 32),
                     SizedBox(
                       width: double.infinity,
@@ -96,18 +77,11 @@ class LeavingRequestScreen extends StatelessWidget {
                             ? const SizedBox(
                                 height: 20,
                                 width: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  color: Colors.white,
-                                ),
+                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                               )
                             : const Text(
                                 'Submit',
-                                style: TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 15,
-                                ),
+                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
                               ),
                       ),
                     ),

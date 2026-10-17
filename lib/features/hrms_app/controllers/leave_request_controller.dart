@@ -1,63 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:get/get_core/src/get_main.dart';
-import 'package:get/get_instance/src/extension_instance.dart';
-import 'package:get/get_navigation/src/extension_navigation.dart';
-import 'package:get/get_rx/src/rx_types/rx_types.dart';
-import 'package:get/get_state_manager/src/simple/get_controllers.dart';
+import 'package:dio/dio.dart';
+import 'package:get/get.dart';
+import 'package:test_flutter/data/models/res/leave_request_models.dart';
+import 'package:test_flutter/data/services/api_controller.dart';
 import 'package:test_flutter/features/hrms_app/controllers/leave_controller.dart';
 import 'package:test_flutter/features/hrms_app/screens/leave/widgets/selection_bottom_sheet.dart';
-import 'package:test_flutter/utils/constants/image_string.dart';
 
-/// Controller backing the Leaving Request form screen.
 class LeaveRequestController extends GetxController {
-  static const List<SelectionOption> timeOptions = [
-    SelectionOption(value: 'Full Day', title: 'Full Day'),
-    SelectionOption(value: 'Half Morning', title: 'Half Morning'),
-    SelectionOption(value: 'Half Afternoon', title: 'Half Afternoon'),
-    SelectionOption(value: 'Customize', title: 'Customize'),
-  ];
-
-  static const List<SelectionOption> leaveTypeOptions = [
-    SelectionOption(value: 'Annual', title: 'Annual'),
-    SelectionOption(value: 'Sick', title: 'Sick'),
-    SelectionOption(value: 'Spacial', title: 'Spacial'),
-    SelectionOption(value: 'Unpaid Leave', title: 'Unpaid Leave'),
-  ];
-
-  // TODO: replace with real approvers (e.g. fetched from an API),
-  // including their actual avatar images instead of the placeholder.
-  static const List<SelectionOption> authorizeOptions = [
-    SelectionOption(
-      value: 'Mr Khiev Sovan',
-      title: 'Mr Khiev Sovan',
-      subtitle: 'HR Supervisor',
-      avatar: AssetImage(ImageString.profile1),
-    ),
-    SelectionOption(
-      value: 'Mr Sok chankungkea',
-      title: 'Mr Sok chankungkea',
-      subtitle: 'Chief Information Technology',
-      avatar: AssetImage(ImageString.profile1),
-    ),
-    SelectionOption(
-      value: 'Mr Reth Vathanak',
-      title: 'Mr Reth Vathanak',
-      subtitle: 'Information Technology Officer',
-      avatar: AssetImage(ImageString.profile1),
-    ),
-  ];
-
   final TextEditingController reasonController = TextEditingController();
 
-  final RxnString selectedTime = RxnString();
   final Rx<DateTime?> startDate = Rx<DateTime?>(null);
   final Rx<DateTime?> endDate = Rx<DateTime?>(null);
-  final RxnString leaveType = RxnString();
-  final RxnString certifyAuthorize = RxnString();
-  final RxnString uploadedImagePath = RxnString();
+  final Rxn<LeaveType> leaveType = Rxn<LeaveType>();
+  final RxList<LeaveType> leaveTypes = <LeaveType>[].obs;
   final RxBool isSubmitting = false.obs;
 
-  String get timeLabel => selectedTime.value ?? 'Select time';
+  final ApiController _api = ApiController();
 
   String get startDateLabel =>
       startDate.value == null ? 'Start Date' : _formatDate(startDate.value!);
@@ -65,19 +23,22 @@ class LeaveRequestController extends GetxController {
   String get endDateLabel =>
       endDate.value == null ? 'End Date' : _formatDate(endDate.value!);
 
-  String get leaveTypeLabel => leaveType.value ?? 'Select leave type';
+  String get leaveTypeLabel => leaveType.value?.name ?? 'Select leave type';
 
-  String get certifyAuthorizeLabel =>
-      certifyAuthorize.value ?? 'Certify Authorize';
+  @override
+  void onInit() {
+    super.onInit();
+    loadLeaveTypes();
+  }
 
-  Future<void> pickTime(BuildContext context) async {
-    final result = await SelectionBottomSheet.show(
-      context,
-      title: 'Select time',
-      options: timeOptions,
-      selectedValue: selectedTime.value,
-    );
-    if (result != null) selectedTime.value = result;
+  Future<void> loadLeaveTypes() async {
+    try {
+      leaveTypes.assignAll(await _api.fetchLeaveTypes());
+    } on ApiException catch (e) {
+      Get.snackbar('Error', e.displayMessage);
+    } catch (_) {
+      Get.snackbar('Error', 'Could not load leave types. Check your connection.');
+    }
   }
 
   Future<void> pickStartDate(BuildContext context) async {
@@ -87,71 +48,96 @@ class LeaveRequestController extends GetxController {
       firstDate: DateTime.now().subtract(const Duration(days: 365)),
       lastDate: DateTime.now().add(const Duration(days: 365)),
     );
-    if (result != null) startDate.value = result;
+    if (result == null) return;
+    startDate.value = result;
+    // End date can't be before the new start date.
+    if (endDate.value != null && endDate.value!.isBefore(result)) {
+      endDate.value = null;
+    }
   }
 
   Future<void> pickEndDate(BuildContext context) async {
+    final first = startDate.value ?? DateTime.now().subtract(const Duration(days: 365));
     final result = await showDatePicker(
       context: context,
-      initialDate: endDate.value ?? startDate.value ?? DateTime.now(),
-      firstDate: startDate.value ?? DateTime.now().subtract(const Duration(days: 365)),
+      initialDate: endDate.value ?? first,
+      firstDate: first,
       lastDate: DateTime.now().add(const Duration(days: 365)),
     );
     if (result != null) endDate.value = result;
   }
 
   Future<void> pickLeaveType(BuildContext context) async {
+    if (leaveTypes.isEmpty) {
+      await loadLeaveTypes();
+      if (leaveTypes.isEmpty) return;
+    }
+
     final result = await SelectionBottomSheet.show(
       context,
-      title: 'Select  leave type',
-      options: leaveTypeOptions,
-      selectedValue: leaveType.value,
+      title: 'Select leave type',
+      options: leaveTypes
+          .map((t) => SelectionOption(value: '${t.id}', title: t.name))
+          .toList(),
+      selectedValue: leaveType.value == null ? null : '${leaveType.value!.id}',
     );
-    if (result != null) leaveType.value = result;
-  }
-
-  Future<void> pickCertifyAuthorize(BuildContext context) async {
-    final result = await SelectionBottomSheet.show(
-      context,
-      title: 'Choose Certify Authorize',
-      options: authorizeOptions,
-      selectedValue: certifyAuthorize.value,
-    );
-    if (result != null) certifyAuthorize.value = result;
-  }
-
-  /// Hook up an image picker package (e.g. image_picker) here.
-  Future<void> pickImage() async {
-    // TODO: integrate an image picker package and store the file path.
+    if (result != null) {
+      leaveType.value = leaveTypes.firstWhere((t) => '${t.id}' == result);
+    }
   }
 
   Future<void> submit() async {
     if (startDate.value == null || endDate.value == null || leaveType.value == null) {
-      Get.snackbar('Missing information', 'Please fill in all required fields.');
+      Get.snackbar('Missing information', 'Please choose a leave type, start date and end date.');
+      return;
+    }
+
+    if (endDate.value!.isBefore(startDate.value!)) {
+      Get.snackbar('Invalid dates', 'End date must be on or after start date.');
       return;
     }
 
     isSubmitting.value = true;
     try {
-      // TODO: send the request to your API / repository here.
-      final leaveController = Get.find<LeaveController>();
-      leaveController.addRequest(
-        LeaveRequest(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          leaveType: leaveType.value!,
-          startDate: startDate.value!,
-          endDate: endDate.value!,
-          reason: reasonController.text,
-          status: LeaveStatus.pending,
-        ),
+      await _api.submitLeaveRequest(
+        leaveTypeId: leaveType.value!.id,
+        startDate: _apiDate(startDate.value!),
+        endDate: _apiDate(endDate.value!),
+        reason: reasonController.text,
       );
+
+      final leaveController = Get.isRegistered<LeaveController>()
+          ? Get.find<LeaveController>()
+          : null;
+      leaveController?.selectedTab.value = LeaveStatus.pending;
       Get.back();
+      if (leaveController != null) {
+        await leaveController.fetchLeaveRequests();
+      }
+      Get.snackbar('Submitted', 'Your leave request was sent.');
+    } on ApiException catch (e) {
+      // Covers validation errors and "dates overlap an existing request".
+      Get.snackbar('Could not submit', e.displayMessage);
+    } on DioException catch (e) {
+      final response = e.response?.data;
+      final message = response is Map
+          ? (response['message'] ?? response['error'])?.toString()
+          : null;
+      Get.snackbar(
+        'Could not submit',
+        message ?? e.message ?? 'The server could not process the request.',
+      );
+    } catch (_) {
+      Get.snackbar('Could not submit', 'Check your connection and try again.');
     } finally {
       isSubmitting.value = false;
     }
   }
 
-  String _formatDate(DateTime date) => '${date.day}/${date.month}/${date.year}';
+  String _formatDate(DateTime d) => '${d.day}/${d.month}/${d.year}';
+
+  String _apiDate(DateTime d) =>
+      '${d.year}-${d.month.toString().padLeft(2, '0')}-${d.day.toString().padLeft(2, '0')}';
 
   @override
   void onClose() {

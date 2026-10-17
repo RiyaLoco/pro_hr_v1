@@ -7,12 +7,23 @@ class UserModels {
   UserModels({this.user, this.token, this.message, this.statusCode});
 
   factory UserModels.fromJson(Map<String, dynamic> json, {int? statusCode}) {
+    final data = json['data'] is Map<String, dynamic>
+        ? json['data'] as Map<String, dynamic>
+        : const <String, dynamic>{};
+    final userJson = json['user'] is Map<String, dynamic>
+        ? json['user'] as Map<String, dynamic>
+        : data['user'] is Map<String, dynamic>
+        ? data['user'] as Map<String, dynamic>
+        : null;
+
     return UserModels(
-      user: json['user'] is Map<String, dynamic>
-          ? User.fromJson(json['user'] as Map<String, dynamic>)
-          : null,
-      token: (json['token'] ?? json['access_token'])?.toString(),
-      message: json['message']?.toString(),
+      user: userJson == null ? null : User.fromJson(userJson),
+      token: (json['token'] ??
+              json['access_token'] ??
+              data['token'] ??
+              data['access_token'])
+          ?.toString(),
+      message: (json['message'] ?? data['message'])?.toString(),
       statusCode: statusCode,
     );
   }

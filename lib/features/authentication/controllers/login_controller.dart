@@ -34,6 +34,8 @@ class LoginController extends GetxController {
       final result = await apiController.login(email, password);
 
       if (result.isSuccess && result.token != null) {
+        // Leave, payroll, and other authenticated APIs use this bearer token.
+        ApiController.setToken(result.token);
         user.value = result;
         Get.offAllNamed(AppRoutes.home);
         return;

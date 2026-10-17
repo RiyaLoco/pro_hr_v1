@@ -1,53 +1,24 @@
+import 'package:get/get_core/src/get_main.dart';
+import 'package:get/get_navigation/src/extension_navigation.dart';
 import 'package:get/get_rx/src/rx_types/rx_types.dart';
 import 'package:get/get_state_manager/src/simple/get_controllers.dart';
-
-/// Status of a leave request — also doubles as the tab selector
-/// on the Leave list screen.
-enum LeaveStatus { pending, rejected, approved }
-
-extension LeaveStatusLabel on LeaveStatus {
-  String get label {
-    switch (this) {
-      case LeaveStatus.pending:
-        return 'Pending';
-      case LeaveStatus.rejected:
-        return 'Reject';
-      case LeaveStatus.approved:
-        return 'Approved';
-    }
-  }
-}
-
-/// Model for a single leave request.
-class LeaveRequest {
-  final String id;
-  final String leaveType;
-  final DateTime startDate;
-  final DateTime endDate;
-  final String reason;
-  final LeaveStatus status;
-
-  const LeaveRequest({
-    required this.id,
-    required this.leaveType,
-    required this.startDate,
-    required this.endDate,
-    required this.reason,
-    required this.status,
-  });
-}
+import 'package:test_flutter/data/models/res/leave_request_models.dart';
+import 'package:test_flutter/data/services/api_controller.dart';
 
 /// Controller for the Leave list screen — holds the selected tab
 /// (Pending / Reject / Approved) and the list of leave requests.
 class LeaveController extends GetxController {
   final Rx<LeaveStatus> selectedTab = LeaveStatus.pending.obs;
-  final RxList<LeaveRequest> allRequests = <LeaveRequest>[].obs;
+  final RxList<LeaveRequest> requests = <LeaveRequest>[].obs;
   final RxBool isLoading = false.obs;
+  final ApiController _api = ApiController();
+  int _fetchGeneration = 0;
 
-  /// Requests filtered to whichever tab is currently selected.
-  List<LeaveRequest> get filteredRequests => allRequests
+  /// The API returns all requests; each tab filters them locally.
+  List<LeaveRequest> get filteredRequests => requests
       .where((request) => request.status == selectedTab.value)
       .toList();
+
 
   @override
   void onInit() {
@@ -59,20 +30,27 @@ class LeaveController extends GetxController {
     selectedTab.value = status;
   }
 
-  /// Loads the user's leave requests. Replace the body with a real
-  /// API / repository call when ready.
+  /// Loads all statuses so tabs don't depend on an API status-filter format.
   Future<void> fetchLeaveRequests() async {
+    final generation = ++_fetchGeneration;
     isLoading.value = true;
     try {
-      // TODO: replace with real data source (API, local DB, etc.)
-      allRequests.value = [];
+      final result = await _api.fetchLeaveRequests();
+      if (generation != _fetchGeneration) return;
+      requests.assignAll(result);
+    } on ApiException catch (e) {
+      if (generation == _fetchGeneration) {
+        Get.snackbar('Error', e.displayMessage);
+      }
+    } catch (_) {
+      if (generation == _fetchGeneration) {
+        Get.snackbar(
+          'Error',
+          'Could not load leave requests. Check your connection.',
+        );
+      }
     } finally {
-      isLoading.value = false;
+      if (generation == _fetchGeneration) isLoading.value = false;
     }
-  }
-
-  /// Adds a newly-submitted leave request to the top of the pending list.
-  void addRequest(LeaveRequest request) {
-    allRequests.insert(0, request);
   }
 }

@@ -6,6 +6,7 @@ import 'package:get/get_rx/src/rx_types/rx_types.dart';
 import 'package:get/get_state_manager/src/simple/get_controllers.dart';
 import 'package:test_flutter/features/hrms_app/controllers/overtime_controller.dart';
 import 'package:test_flutter/features/hrms_app/screens/leave/widgets/selection_bottom_sheet.dart';
+import 'package:test_flutter/utils/constants/colors.dart';
 import 'package:test_flutter/utils/constants/image_string.dart';
 
 /// Controller backing the Overtime Request form screen.
@@ -75,6 +76,28 @@ class OvertimeRequestController extends GetxController {
       initialDate: startDate.value ?? DateTime.now(),
       firstDate: DateTime.now().subtract(const Duration(days: 365)),
       lastDate: DateTime.now().add(const Duration(days: 365)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: PColor.primary,
+              onPrimary: Colors.white,
+              onSurface: PColor.textColor,
+            ),
+            datePickerTheme: DatePickerThemeData(
+              
+              dividerColor: PColor.primary, // the line under the date header
+            ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(
+                foregroundColor: PColor.primary,
+                // button text color
+              ),
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
     if (result != null) startDate.value = result;
   }
@@ -85,6 +108,28 @@ class OvertimeRequestController extends GetxController {
       initialDate: endDate.value ?? startDate.value ?? DateTime.now(),
       firstDate: startDate.value ?? DateTime.now().subtract(const Duration(days: 365)),
       lastDate: DateTime.now().add(const Duration(days: 365)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: PColor.primary,
+              onPrimary: Colors.white,
+              onSurface: PColor.textColor,
+            ),
+            datePickerTheme: DatePickerThemeData(
+              
+              dividerColor: PColor.primary, // the line under the date header
+            ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(
+                foregroundColor: PColor.primary,
+                // button text color
+              ),
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
     if (result != null) endDate.value = result;
   }

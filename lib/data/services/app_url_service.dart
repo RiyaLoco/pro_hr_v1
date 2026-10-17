@@ -3,9 +3,9 @@ class AppUrlService {
 
   static const String baseUrl = 'http://192.168.1.4:8000/api/v1';
   static const String login = '/login';
+  static const String leaveTypes = '/employee/leave-requests/types';
+  static const String leaveRequests = '/employee/leave-requests';
 
-  /// Converts a server-relative upload path, such as `avatars/user.jpg`, into
-  /// a URL that can be used by [NetworkImage].
   static String fileUrl(String path) {
     final uri = Uri.tryParse(path);
     if (uri != null && (uri.scheme == 'http' || uri.scheme == 'https')) {

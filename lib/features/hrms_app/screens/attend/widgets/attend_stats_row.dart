@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:test_flutter/common/widgets/app_container.dart';
 import 'package:test_flutter/utils/constants/colors.dart';
 
-class StatsRow extends StatelessWidget {
-  const StatsRow({super.key});
+class AttendanceStatsRow extends StatelessWidget {
+  const AttendanceStatsRow({super.key});
 
   @override
   Widget build(BuildContext context) {

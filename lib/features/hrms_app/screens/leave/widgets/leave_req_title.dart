@@ -5,15 +5,16 @@ import 'package:test_flutter/utils/constants/colors.dart';
 class LeaveRequestTile extends StatelessWidget {
   final LeaveRequest request;
   Color _statusColor(LeaveStatus status) {
-  switch (status) {
-    case LeaveStatus.pending:
-      return const Color(0xFFE0A93B); // yellow
-    case LeaveStatus.rejected:
-      return const Color(0xFFD9534F); // red
-    case LeaveStatus.approved:
-      return PColor.primary;
+    switch (status) {
+      case LeaveStatus.pending:
+        return const Color(0xFFE0A93B); // yellow
+      case LeaveStatus.rejected:
+        return const Color(0xFFD9534F); // red
+      case LeaveStatus.approved:
+        return PColor.primary;
+    }
   }
-}
+
   const LeaveRequestTile({super.key, required this.request});
 
   @override
@@ -32,56 +33,57 @@ class LeaveRequestTile extends StatelessWidget {
           ),
         ],
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  request.leaveType,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                request.leaveType,
+                style: TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                  color: PColor.primary,
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: _statusColor(request.status),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  request.status.label.toUpperCase(),
                   style: TextStyle(
-                    fontSize: 15,
+                    fontSize: 11,
                     fontWeight: FontWeight.bold,
-                    color: PColor.primary,
+                    color: Colors.white,
                   ),
                 ),
-                Text(
-                  request.reason,
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w400,
-                    color: PColor.primary,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${_formatDate(request.startDate)} - ${_formatDate(request.endDate)}',
-                  style: TextStyle(fontSize: 13, color: PColor.textColor),
-                ),
-              ],
+              ),
+            ],
+          ),
+          Text(
+            request.reason,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w400,
+              color: PColor.primary,
             ),
           ),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: _statusColor(request.status),
-              borderRadius: BorderRadius.circular(8),
-            ),
-            child: Text(
-              request.status.label.toUpperCase(),
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
+          const SizedBox(height: 4),
+          Text(
+            '${_formatDate(request.startDate)} - ${_formatDate(request.endDate)}',
+            style: TextStyle(fontSize: 13, color: PColor.textColor),
           ),
         ],
       ),
     );
   }
-    String _formatDate(DateTime date) =>
-      '${date.day}/${date.month}/${date.year}';
+
+  String _formatDate(DateTime date) => '${date.day}/${date.month}/${date.year}';
 }

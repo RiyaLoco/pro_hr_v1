@@ -14,6 +14,7 @@ class AppBarContent extends StatelessWidget {
   final String? image;
   final bool isShowProfile;
   final VoidCallback? onBackTap;
+  final bool useSafeArea;
 
   const AppBarContent({
     super.key,
@@ -28,6 +29,7 @@ class AppBarContent extends StatelessWidget {
     this.image,
     this.isShowProfile = true,
     this.onBackTap,
+    this.useSafeArea = false,
   });
 
   factory AppBarContent.collapsed({
@@ -52,6 +54,7 @@ class AppBarContent extends StatelessWidget {
       image: image,
       isShowProfile: isShowProfile,
       onBackTap: onBackTap,
+      useSafeArea: false,
     );
   }
 
@@ -75,6 +78,7 @@ class AppBarContent extends StatelessWidget {
       image: image,
       isShowProfile: isShowProfile,
       onBackTap: onBackTap,
+      useSafeArea: true,
     );
   }
   factory AppBarContent.detail({
@@ -90,91 +94,94 @@ class AppBarContent extends StatelessWidget {
       title: title,
       subtitle: subtitle,
       isShowProfile: false,
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 6),
       onBackTap: onBackTap,
+      useSafeArea: false,
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final imageProvider = _imageProvider(image);
+    final content = Padding(
+      padding: padding,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          if (isShowProfile)
+            CircleAvatar(
+              radius: avatarRadius + 2,
+              backgroundColor: Colors.white.withValues(alpha: 0.3),
+              child: CircleAvatar(
+                radius: avatarRadius,
+                backgroundColor: Colors.white.withValues(alpha: 0.3),
+                backgroundImage: imageProvider,
+                onBackgroundImageError: imageProvider != null
+                    ? (exception, stackTrace) {
+                        debugPrint('Avatar failed to load: $exception');
+                      }
+                    : null,
+                child: imageProvider == null
+                    ? Icon(
+                        Icons.person,
+                        color: Colors.white,
+                        size: avatarRadius,
+                      )
+                    : null,
+              ),
+            )
+          else
+            IconButton(
+              icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
+              onPressed: onBackTap ?? () => Get.back(),
+            ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: nameFontSize,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.85),
+                    fontSize: roleFontSize,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (iconSize > 0)
+            IconButton(
+              icon: Icon(
+                Icons.notifications_outlined,
+                color: Colors.white,
+                size: iconSize,
+              ),
+              onPressed: onNotificationTap ?? () {},
+            ),
+        ],
+      ),
+    );
 
     return GestureDetector(
-      onTap: () => Get.toNamed('/profile'),
-      child: SafeArea(
-        child: Padding(
-          padding: padding,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              // Avatar
-              if (isShowProfile)
-                CircleAvatar(
-                  radius: avatarRadius + 2,
-                  backgroundColor: Colors.white.withValues(alpha: 0.3),
-                  child: CircleAvatar(
-                    radius: avatarRadius,
-                    backgroundColor: Colors.white.withValues(alpha: 0.3),
-                    backgroundImage: imageProvider,
-                    onBackgroundImageError: imageProvider != null
-                        ? (exception, stackTrace) {
-                            debugPrint('Avatar failed to load: $exception');
-                          }
-                        : null,
-                    child: imageProvider == null
-                        ? Icon(
-                            Icons.person,
-                            color: Colors.white,
-                            size: avatarRadius,
-                          )
-                        : null,
-                  ),
-                )
-              else
-                IconButton(
-                  icon: const Icon(Icons.arrow_back_ios_new, color: Colors.white),
-                  onPressed: onBackTap ?? () => Get.back(),
-                ),
-              const SizedBox(width: 12),
-      
-              // Name + Role
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: nameFontSize,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    Text(
-                      subtitle,
-                      style: TextStyle(
-                        color: Colors.white.withValues(alpha: 0.85),
-                        fontSize: roleFontSize,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-      
-              // Notification Icon
-              IconButton(
-                icon: Icon(
-                  Icons.notifications_outlined,
-                  color: Colors.white,
-                  size: iconSize,
-                ),
-                onPressed: onNotificationTap ?? () {},
-              ),
-            ],
-          ),
-        ),
-      ),
+      onTap: isShowProfile ? () => Get.toNamed('/profile') : null,
+      child: useSafeArea
+          ? SafeArea(top: true, bottom: false, child: content)
+          : content,
     );
   }
 

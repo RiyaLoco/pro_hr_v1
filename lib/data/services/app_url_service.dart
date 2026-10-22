@@ -1,10 +1,11 @@
 class AppUrlService {
   AppUrlService._();
 
-  static const String baseUrl = 'http://192.168.1.4:8000/api/v1';
+  static const String baseUrl = 'http://192.168.1.3:8000/api/v1';
   static const String login = '/login';
   static const String leaveTypes = '/employee/leave-requests/types';
   static const String leaveRequests = '/employee/leave-requests';
+  static const String recruitments = '/recruitments';
 
   static String fileUrl(String path) {
     final uri = Uri.tryParse(path);
@@ -18,6 +19,13 @@ class AppUrlService {
       host: apiUri.host,
       port: apiUri.hasPort ? apiUri.port : null,
     );
-    return '${serverUri.toString()}/${path.replaceFirst(RegExp(r'^/+'), '')}';
+    var relativePath = path.replaceFirst(RegExp(r'^/+'), '');
+    // Laravel stores avatar paths relative to its public storage disk.
+    // API-provided absolute URLs and paths already under storage stay intact.
+    if (relativePath.startsWith('avatars/') ||
+        relativePath.startsWith('admin-users-avatar/')) {
+      relativePath = 'storage/$relativePath';
+    }
+    return '${serverUri.toString()}/$relativePath';
   }
 }

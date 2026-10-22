@@ -5,4 +5,6 @@ class PColor{
   static const Color subTitleColor = Color(0xff8A8A8A);
   static const Color textFormFileColor = Color(0xffF1FFDE);
   static const Color textColor = Color(0xff95A57D);
+  static const Color pendingColor = Color(0xFFE0A93B);
+  static const Color rejectedColor = Color(0xFFD9534F);
  }

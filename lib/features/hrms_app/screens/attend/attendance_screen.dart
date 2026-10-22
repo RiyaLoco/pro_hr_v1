@@ -5,8 +5,8 @@ import 'package:get/get_instance/src/extension_instance.dart';
 import 'package:test_flutter/common/widgets/custom_sliver_appbar.dart';
 import 'package:test_flutter/common/widgets/section_header.dart';
 import 'package:test_flutter/features/hrms_app/controllers/attendance_controller.dart';
+import 'package:test_flutter/features/hrms_app/screens/attend/widgets/attend_stats_row.dart';
 import 'package:test_flutter/features/hrms_app/screens/attend/widgets/history_card.dart';
-import 'package:test_flutter/features/hrms_app/screens/attend/widgets/stats_row.dart';
 import 'package:test_flutter/features/hrms_app/screens/attend/widgets/weekly_progress_card.dart';
 import 'package:test_flutter/utils/constants/size.dart';
 
@@ -39,7 +39,7 @@ class AttendanceScreen extends StatelessWidget {
                       children: [
                         WeeklyProgressCard(),
                         const SizedBox(height: Sizes.spaceBtwItems),
-                        StatsRow(),
+                        AttendanceStatsRow(),
                         const SizedBox(height: Sizes.spaceBtwItems),
                         SectionHeader(title: 'My Attendance History'),
                         const SizedBox(height: Sizes.spaceBtwItems),

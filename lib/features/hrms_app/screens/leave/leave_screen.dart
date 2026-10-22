@@ -6,6 +6,7 @@ import 'package:get/get_state_manager/src/rx_flutter/rx_obx_widget.dart';
 import 'package:test_flutter/common/widgets/custom_sliver_appbar.dart';
 import 'package:test_flutter/data/models/res/leave_request_models.dart';
 import 'package:test_flutter/features/hrms_app/controllers/leave_controller.dart';
+import 'package:test_flutter/features/hrms_app/screens/leave/leave_screen_detail.dart';
 import 'package:test_flutter/features/hrms_app/screens/leave/leaving_request_screen.dart';
 import 'package:test_flutter/features/hrms_app/screens/leave/widgets/leave_req_title.dart';
 import 'package:test_flutter/features/hrms_app/screens/leave/widgets/tap_row.dart';
@@ -59,22 +60,22 @@ class LeaveScreen extends StatelessWidget {
             }
 
             return SliverPadding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.symmetric(horizontal: 16),
               sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    final request = requests[index];
-                    return Padding(
-                      padding: EdgeInsets.only(
-                        bottom: index == requests.length - 1
-                            ? 0
-                            : Sizes.spaceBtwItems,
-                      ),
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  final request = requests[index];
+                  return Padding(
+                    padding: EdgeInsets.only(
+                      bottom: index == requests.length - 1
+                          ? 0
+                          : Sizes.spaceBtwItems,
+                    ),
+                    child: GestureDetector(
+                      onTap: ()=> Get.to(()=> LeaveScreenDetail(request: request)),
                       child: LeaveRequestTile(request: request),
-                    );
-                  },
-                  childCount: requests.length,
-                ),
+                    ),
+                  );
+                }, childCount: requests.length),
               ),
             );
           }),
@@ -84,7 +85,6 @@ class LeaveScreen extends StatelessWidget {
   }
 
   // ---- Tabs ----
-
 
   // ---- Empty state ----
   Widget _buildEmptyState() {
@@ -111,9 +111,3 @@ class LeaveScreen extends StatelessWidget {
     );
   }
 }
-
-
-
-
-
-

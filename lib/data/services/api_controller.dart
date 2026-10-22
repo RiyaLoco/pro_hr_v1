@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:test_flutter/data/models/res/leave_request_models.dart';
+import 'package:test_flutter/data/models/res/recruitment_models.dart';
 import 'package:test_flutter/data/models/res/user_models.dart';
 import 'package:test_flutter/data/services/app_url_service.dart';
 
@@ -57,17 +58,26 @@ class ApiController {
   Future<List<LeaveType>> fetchLeaveTypes() async {
     final response = await dio.get(AppUrlService.leaveTypes);
     final body = _unwrap(response);
-    return (body['data'] as List)
+    final data = body['data'];
+    if (data is! List || data.any((item) => item is! Map<String, dynamic>)) {
+      throw const FormatException('Expected leave types in a data list.');
+    }
+    return data
         .map((e) => LeaveType.fromJson(e as Map<String, dynamic>))
         .toList();
   }
 
-  Future<List<LeaveRequest>> fetchLeaveRequests() async {
+  Future<List<LeaveRequest>> fetchLeaveRequests({LeaveStatus? status}) async {
+    final List<String?> statuses = status == null ? [null] : status.apiValues;
+    final pages = await Future.wait(statuses.map((_fetchLeavePage)));
+    return pages.expand((page) => page).toList()
+      ..sort((a, b) => b.startDate.compareTo(a.startDate));
+  }
+
+  Future<List<LeaveRequest>> _fetchLeavePage(String? status) async {
     final response = await dio.get(
       AppUrlService.leaveRequests,
-      queryParameters: {
-        'per_page': 100,
-      },
+      queryParameters: {'status': ?status, 'per_page': 100},
     );
     final body = _unwrap(response);
     return (body['data'] as List)
@@ -79,34 +89,72 @@ class ApiController {
     required int leaveTypeId,
     required String startDate,
     required String endDate,
-    String? reason,
-  })async{
-    final response = await dio.post(AppUrlService.leaveRequests,data:{
+    required double days,
+    required String reason,
+    required String attachmentPath,
+    required String attachmentName,
+  }) async {
+    final form = FormData.fromMap({
       'leave_type_id': leaveTypeId,
       'start_date': startDate,
       'end_date': endDate,
-      if (reason != null && reason.trim().isNotEmpty) 'reason': reason.trim(),
+      'days': days,
+      'reason': reason,
+      'attachment': await MultipartFile.fromFile(
+        attachmentPath,
+        filename: attachmentName,
+      ),
     });
+
+    final response = await dio.post(
+      AppUrlService.leaveRequests,
+      data: form,
+      options: Options(receiveTimeout: const Duration(seconds: 60)),
+    );
     _unwrap(response);
   }
- 
+
+  Future<List<Recruitment>> fetchRecruitments({
+    int page = 1,
+    int perPage = 10,
+    String? search,
+  }) async {
+    final response = await dio.get(
+      AppUrlService.recruitments,
+      queryParameters: {
+        'page': page,
+        'per_page': perPage,
+        if (search != null && search.trim().isNotEmpty) 'search': search.trim(),
+      },
+    );
+    final body = _unwrap(response);
+    return (body['data'] as List)
+        .map((e) => Recruitment.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// validateStatus lets 4xx through instead of throwing, so check it here.
   Map<String, dynamic> _unwrap(Response response) {
     final data = response.data;
     final body = data is Map<String, dynamic> ? data : <String, dynamic>{};
     final code = response.statusCode ?? 0;
 
-    if (code >= 200 && code < 300) return body;
+    // if (code >= 200 && code < 300) return body;
+    final httpOk = code >= 200 && code < 300;
+    final apiOk = body['success'] != false;
+    if(httpOk && apiOk) return body;
+
     final errors = <String, List<String>>{};
     final rawErrors = body['errors'];
     if (rawErrors is Map) {
-      rawErrors.forEach((filed, message) {
-        if (message is List) {
-          errors['$filed'] = message.map((m) => '$m').toList();
+      rawErrors.forEach((field, messages) {
+        if (messages is List) {
+          errors['$field'] = messages.map((m) => '$m').toList();
         }
       });
     }
     throw ApiException(
-      body['message']?.toString() ?? 'Request failed with status code $code',
+      body['message']?.toString() ?? 'Request failed ($code)',
       statusCode: code,
       fieldErrors: errors,
     );

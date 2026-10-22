@@ -2,17 +2,13 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:get/get_rx/src/rx_types/rx_types.dart';
-import 'package:get/get_state_manager/src/simple/get_controllers.dart';
 import 'package:test_flutter/data/models/res/user_models.dart';
-import 'package:test_flutter/data/services/app_url_service.dart';
+import 'package:intl/intl.dart';
 import 'package:test_flutter/features/authentication/controllers/login_controller.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:test_flutter/features/hrms_app/screens/leave/widgets/selection_bottom_sheet.dart';
 import 'package:test_flutter/routes/app_routes.dart';
 
-/// Controller for the user Profile screen — profile details plus
-/// picking/uploading a new profile picture.
 class ProfileController extends GetxController {
   final Rx<File?> profileImage = Rx<File?>(null);
 
@@ -28,24 +24,58 @@ class ProfileController extends GetxController {
   final RxBool isUploading = false.obs;
 
   final ImagePicker _picker = ImagePicker();
+  late final Worker _accountWorker;
 
   @override
   void onInit() {
     super.onInit();
-    final account = Get.find<LoginController>().user.value?.user;
-    if (account != null) _applyAccount(account);
+    final login = Get.find<LoginController>();
+    _applyAccount(login.user.value?.user);
+    _accountWorker = ever(login.user, (value) {
+      profileImage.value = null;
+      _applyAccount(value?.user);
+    });
   }
 
-  void _applyAccount(User account) {
-    name.value = _valueOrFallback(account.name ?? account.username);
-    position.value = _valueOrFallback(account.role);
-    employeeId.value = account.employeeId?.toString() ?? '—';
-    email.value = _valueOrFallback(account.email);
-    avatarUrl.value = account.avatarUrl ?? account.avatar;
+  void _applyAccount(User? account) {
+    final employee = account?.employee;
+    name.value = _firstValue([
+      employee?.name,
+      account?.name,
+      account?.username,
+    ]);
+    position.value = _firstValue([employee?.position]);
+    employeeId.value = _firstValue([
+      employee?.code,
+      employee?.id?.toString(),
+      account?.employeeId?.toString(),
+    ]);
+    email.value = _firstValue([employee?.email, account?.email]);
+    phone.value = _firstValue([employee?.phone]);
+    department.value = _firstValue([employee?.department]);
+    final rawDate = employee?.joinDate;
+    final date = rawDate == null ? null : DateTime.tryParse(rawDate);
+    joinDate.value = date == null
+        ? _firstValue([rawDate])
+        : DateFormat('dd MMM yyyy').format(date);
+    final avatar = _firstValue([
+      employee?.avatarUrl,
+      account?.avatarUrl,
+      account?.avatar,
+    ]);
+    avatarUrl.value = avatar == '—' ? null : avatar;
   }
 
-  String _valueOrFallback(String? value) =>
-      value == null || value.trim().isEmpty ? '—' : value.trim();
+  String _firstValue(List<String?> values) => values
+      .whereType<String>()
+      .map((value) => value.trim())
+      .firstWhere((value) => value.isNotEmpty, orElse: () => '—');
+
+  @override
+  void onClose() {
+    _accountWorker.dispose();
+    super.onClose();
+  }
 
   void logout() {
     Get.find<LoginController>().user.value = null;

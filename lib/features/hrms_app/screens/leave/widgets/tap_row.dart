@@ -22,7 +22,7 @@ class TapRow extends StatelessWidget {
                 onTap: () => controller.changeTab(status),
               ),
             ),
-            if (status != LeaveStatus.values.last) const SizedBox(width: 10),
+            if (status != LeaveStatus.values.last) SizedBox(width: 10),
           ],
         ],
       ),

@@ -8,7 +8,7 @@ class HomeController extends GetxController {
   late ScrollController scrollController;
   final isCollapsed = false.obs;
   final bottomCurveHeight = 20.0;
-  final expandedHeight = 110.0;
+  final expandedHeight = 100.0;
   double get totalExpandedHeight => expandedHeight + bottomCurveHeight;
   final currentTime = ''.obs;
   final currentDate = ''.obs;
@@ -31,7 +31,7 @@ class HomeController extends GetxController {
 
   void _onScroll() {
     final collapsed =
-        scrollController.offset > (expandedHeight - kToolbarHeight - 20);
+        scrollController.offset >= (expandedHeight - kToolbarHeight);
     if (collapsed != isCollapsed.value) {
       isCollapsed.value = collapsed;
     }

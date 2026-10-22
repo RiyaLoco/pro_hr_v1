@@ -1,3 +1,5 @@
+import 'employee_models.dart';
+
 class UserModels {
   User? user;
   String? token;
@@ -17,12 +19,19 @@ class UserModels {
         : null;
 
     return UserModels(
-      user: userJson == null ? null : User.fromJson(userJson),
-      token: (json['token'] ??
-              json['access_token'] ??
-              data['token'] ??
-              data['access_token'])
-          ?.toString(),
+      user: userJson == null
+          ? null
+          : User.fromJson({
+              ...userJson,
+              if (userJson['employee'] == null)
+                'employee': json['employee'] ?? data['employee'],
+            }),
+      token:
+          (json['token'] ??
+                  json['access_token'] ??
+                  data['token'] ??
+                  data['access_token'])
+              ?.toString(),
       message: (json['message'] ?? data['message'])?.toString(),
       statusCode: statusCode,
     );
@@ -43,6 +52,7 @@ class User {
   final int? employeeId;
   final String? role;
   final String? avatarUrl;
+  final Employee? employee;
 
   User({
     this.id,
@@ -55,6 +65,7 @@ class User {
     this.employeeId,
     this.role,
     this.avatarUrl,
+    this.employee,
   });
 
   factory User.fromJson(Map<String, dynamic> json) {
@@ -66,9 +77,14 @@ class User {
       username: json['username']?.toString(),
       status: json['status']?.toString(),
       avatar: json['avatar']?.toString(),
-      employeeId: _toInt(json['employee_id']),
+      employeeId:
+          _toInt(json['employee_id']) ??
+          (json['employee'] is Map ? _toInt(json['employee']['id']) : null),
       role: json['role']?.toString(),
       avatarUrl: json['avatar_url']?.toString(),
+      employee: json['employee'] is Map<String, dynamic>
+          ? Employee.fromJson(json['employee'] as Map<String, dynamic>)
+          : null,
     );
   }
 

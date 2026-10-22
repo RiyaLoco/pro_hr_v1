@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:test_flutter/common/widgets/custom_sliver_appbar.dart';
+import 'package:test_flutter/common/widgets/section_header.dart';
 import 'package:test_flutter/data/services/app_url_service.dart';
 import 'package:test_flutter/features/authentication/controllers/login_controller.dart';
 import 'package:test_flutter/features/hrms_app/controllers/home_controller.dart';
+import 'package:test_flutter/features/hrms_app/controllers/profile_controller.dart';
 import 'package:test_flutter/features/hrms_app/screens/home/widgets/attendance_card.dart';
 import 'package:test_flutter/features/hrms_app/screens/home/widgets/home_menu_grid.dart';
 import 'package:test_flutter/features/hrms_app/screens/home/widgets/recruitment_section.dart';
@@ -17,19 +19,20 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final controller = Get.put(HomeController());
     final loginController = Get.find<LoginController>();
-
+    final controllerProfile = Get.put(ProfileController());
     return Scaffold(
       backgroundColor: Colors.grey[100],
       body: Obx(() {
         final user = loginController.user.value;
         final userName = user?.user?.name ?? user?.user?.name ?? 'Guest';
         final userAvatar = user?.user?.avatarUrl;
+        final position = controllerProfile.position.value;
           return CustomScrollView(
             controller: controller.scrollController,
             slivers: [
                CustomSliverAppBar(
                 title: 'Hello, $userName',
-                subtitle: 'Mobile Developer',
+                subtitle: position,
                 image: userAvatar != null ? AppUrlService.fileUrl(userAvatar) : ImageString.profile1,
                 isShowProfile: true,
               ),
@@ -74,7 +77,7 @@ class HomeScreen extends StatelessWidget {
                       const SizedBox(height: Sizes.spaceBtwItems),
                       const RecruitmentSection(),
                       const SizedBox(height: Sizes.spaceBtwItems),
-                      const RecruitmentSection(),
+                      
                     ],
                   ),
                 ),

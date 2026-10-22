@@ -27,11 +27,17 @@ class LeavingRequestScreen extends StatelessWidget {
           ),
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
               child: Obx(
                 () => Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    LeaveFormField(
+                      icon: Icons.access_time,
+                      label: controller.durationLabel,
+                      onTap: () => controller.pickDuration(context),
+                    ),
+                    const SizedBox(height: Sizes.spaceBtwItems),
                     Row(
                       children: [
                         Expanded(
@@ -48,11 +54,26 @@ class LeavingRequestScreen extends StatelessWidget {
                             icon: Icons.calendar_today_outlined,
                             label: controller.endDateLabel,
                             showDropdownIcon: false,
-                            onTap: () => controller.pickEndDate(context),
+                            // A half day is a single date, so it follows the start date.
+                            onTap: controller.duration.value.isHalf
+                                ? null
+                                : () => controller.pickEndDate(context),
                           ),
                         ),
                       ],
                     ),
+                    if (controller.days > 0)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8, left: 4),
+                        child: Text(
+                          'Total: ${controller.daysLabel}',
+                          style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: PColor.primary,
+                          ),
+                        ),
+                      ),
                     const SizedBox(height: Sizes.spaceBtwItems),
                     LeaveFormField(
                       icon: Icons.assignment_outlined,
@@ -61,6 +82,11 @@ class LeavingRequestScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: Sizes.spaceBtwItems),
                     LeaveTextAreaField(controller: controller.reasonController),
+                    const SizedBox(height: Sizes.spaceBtwItems),
+                    LeaveUploadField(
+                      label: controller.attachmentLabel,
+                      onTap: controller.pickAttachment,
+                    ),
                     const SizedBox(height: 32),
                     SizedBox(
                       width: double.infinity,

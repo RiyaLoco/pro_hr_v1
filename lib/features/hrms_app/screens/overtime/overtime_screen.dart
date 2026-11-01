@@ -1,3 +1,4 @@
+import 'package:test_flutter/common/widgets/app_refresh_scroll_view.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:get/get_instance/src/extension_instance.dart';
@@ -32,7 +33,8 @@ class OvertimeScreen extends StatelessWidget {
 
       body: Stack(
         children: [
-          CustomScrollView(
+          AppRefreshScrollView(
+            onRefresh: controller.fetchEntries,
             slivers: [
               CustomSliverAppBar(
                 title: 'Overtime',

@@ -7,6 +7,33 @@ import 'package:test_flutter/features/hrms_app/controllers/profile_controller.da
 void main() {
   tearDown(() => Get.reset());
 
+  test('profile reads the phone from the employee contact', () {
+    final login = Get.put(LoginController());
+    login.user.value = UserModels.fromJson({
+      'success': true,
+      'user': {
+        'id': 9,
+        'employee': {
+          'id': 3,
+          'contact_id': 2,
+          'contact': {'id': 2, 'phone': ' 012345678 '},
+        },
+      },
+    });
+    final profile = Get.put(ProfileController());
+
+    expect(login.user.value?.user?.employee?.phone, '012345678');
+    expect(profile.phone.value, '012345678');
+
+    // A contact ID alone must not be displayed as a phone number.
+    login.user.value = UserModels.fromJson({
+      'user': {
+        'employee': {'contact_id': 2, 'contact': null},
+      },
+    });
+    expect(profile.phone.value, '—');
+  });
+
   test('profile displays the linked employee from the login response', () {
     final result = UserModels.fromJson({
       'user': {

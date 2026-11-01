@@ -51,7 +51,7 @@ class ProfileController extends GetxController {
       account?.employeeId?.toString(),
     ]);
     email.value = _firstValue([employee?.email, account?.email]);
-    phone.value = _firstValue([employee?.phone]);
+    phone.value = _firstValue([employee?.phone, account?.phone]);
     department.value = _firstValue([employee?.department]);
     final rawDate = employee?.joinDate;
     final date = rawDate == null ? null : DateTime.tryParse(rawDate);

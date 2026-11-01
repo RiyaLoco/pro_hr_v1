@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:test_flutter/features/hrms_app/screens/home/recruitment_list_screen.dart';
 import 'package:get/get.dart';
 import 'package:test_flutter/common/widgets/section_header.dart';
 import 'package:test_flutter/data/models/res/recruitment_models.dart';
@@ -16,14 +17,19 @@ class RecruitmentSection extends StatelessWidget {
 
     return Obx(() {
       final isEmpty = controller.recruitments.isEmpty;
-      if (isEmpty && !controller.isLoading.value && !controller.hasError.value) {
+      if (isEmpty &&
+          !controller.isLoading.value &&
+          !controller.hasError.value) {
         return const SizedBox.shrink();
       }
 
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SectionHeader(title: 'Recruitment'),
+          SectionHeader(
+            title: 'Recruitment',
+            onActionTap: () => Get.to(() => const RecruitmentListScreen()),
+          ),
           const SizedBox(height: 12),
           SizedBox(height: 160, child: _buildBody(controller)),
         ],

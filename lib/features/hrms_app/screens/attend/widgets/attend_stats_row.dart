@@ -19,14 +19,14 @@ class AttendanceStatsRow extends StatelessWidget {
   }
     Widget _statCard(String value, String label) {
     return AppContainer(
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+      padding: const EdgeInsets.symmetric(vertical: 16),
       borderRadius: 10,
       child: Column(
         children: [
           Text(
             value,
             style: TextStyle(
-              fontSize: 24,
+              fontSize: 22,
               fontWeight: FontWeight.bold,
               color: PColor.primary,
             ),
@@ -36,7 +36,7 @@ class AttendanceStatsRow extends StatelessWidget {
             label,
             textAlign: TextAlign.center,
             style: const TextStyle(
-              fontSize: 12,
+              fontSize: 11,
               fontWeight: FontWeight.w700,
               color: PColor.primary,
               letterSpacing: 0.5,

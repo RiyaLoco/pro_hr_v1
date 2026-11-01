@@ -36,12 +36,18 @@ class Employee {
       text(json['f_name'] ?? json['first_name']),
       text(json['l_name'] ?? json['last_name']),
     ].whereType<String>().join(' ');
+    final contact = json['contact'];
     return Employee(
       id: int.tryParse('${json['id']}'),
       code: text(json['employee_code'] ?? json['code']),
       name: text(json['full_name']) ?? text(json['name']) ?? text(fullName),
       email: text(json['email']),
-      phone: text(json['phone'] ?? json['phone_number']),
+      phone:
+          (contact is Map ? text(contact['phone']) : null) ??
+          text(json['phone']) ??
+          text(json['phone_number']) ??
+          text(json['mobile']) ??
+          text(json['mobile_number']),
       position: label(
         json['position'] ?? json['designation'] ?? json['job_title'],
       ),

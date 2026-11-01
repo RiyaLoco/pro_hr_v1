@@ -3,7 +3,7 @@ import 'package:test_flutter/data/services/app_url_service.dart';
 
 void main() {
   test('avatar disk paths resolve under Laravel public storage', () {
-    const server = 'http://192.168.1.3:8000';
+    final server = Uri.parse(AppUrlService.baseUrl).origin;
     expect(
       AppUrlService.fileUrl('admin-users-avatar/photo.jpg'),
       '$server/storage/admin-users-avatar/photo.jpg',
@@ -23,6 +23,17 @@ void main() {
     expect(
       AppUrlService.fileUrl('images/banner.jpg'),
       '$server/images/banner.jpg',
+    );
+  });
+  test('file URLs handle whitespace and protocol-relative URLs', () {
+    final server = Uri.parse(AppUrlService.baseUrl).origin;
+    expect(
+      AppUrlService.fileUrl('  /storage/avatars/photo.jpg  '),
+      '$server/storage/avatars/photo.jpg',
+    );
+    expect(
+      AppUrlService.fileUrl('//cdn.example.com/photo.jpg'),
+      '${Uri.parse(AppUrlService.baseUrl).scheme}://cdn.example.com/photo.jpg',
     );
   });
 }

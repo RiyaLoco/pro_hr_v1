@@ -1,3 +1,4 @@
+import 'package:test_flutter/common/widgets/app_refresh_scroll_view.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:get/get_instance/src/extension_instance.dart';
@@ -20,7 +21,8 @@ class ReportScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
-      body: CustomScrollView(
+      body: AppRefreshScrollView(
+        onRefresh: controller.fetchReportData,
         slivers: [
           CustomSliverAppBar(
             title: 'Report',
@@ -29,7 +31,7 @@ class ReportScreen extends StatelessWidget {
           ),
           SliverToBoxAdapter(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16,vertical: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -37,14 +39,22 @@ class ReportScreen extends StatelessWidget {
                   const SizedBox(height: 24),
                   Text(
                     'This Week',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: PColor.primary),
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: PColor.primary,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   WeeklyChartCard(),
                   const SizedBox(height: 24),
                   Text(
                     'My Reports',
-                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: PColor.primary),
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: PColor.primary,
+                    ),
                   ),
                   const SizedBox(height: 12),
                   ReportList(),
@@ -61,17 +71,30 @@ class ReportScreen extends StatelessWidget {
     return Obx(
       () => Row(
         children: [
-          Expanded(child: _StatBox(label: 'ATTENDANCE', value: controller.attendanceRate.value)),
+          Expanded(
+            child: _StatBox(
+              label: 'ATTENDANCE',
+              value: controller.attendanceRate.value,
+            ),
+          ),
           const SizedBox(width: 12),
-          Expanded(child: _StatBox(label: 'LEAVE TAKEN', value: controller.totalLeaveDays.value)),
+          Expanded(
+            child: _StatBox(
+              label: 'LEAVE TAKEN',
+              value: controller.totalLeaveDays.value,
+            ),
+          ),
           const SizedBox(width: 12),
-          Expanded(child: _StatBox(label: 'OVERTIME', value: controller.totalOvertimeHours.value)),
+          Expanded(
+            child: _StatBox(
+              label: 'OVERTIME',
+              value: controller.totalOvertimeHours.value,
+            ),
+          ),
         ],
       ),
     );
   }
-
-
 }
 
 class _StatBox extends StatelessWidget {
@@ -93,17 +116,25 @@ class _StatBox extends StatelessWidget {
         children: [
           Text(
             value,
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: PColor.primary),
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: PColor.primary,
+            ),
           ),
           const SizedBox(height: 4),
           Text(
             label,
             textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: PColor.textColor, letterSpacing: 0.5),
+            style: const TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.w600,
+              color: PColor.textColor,
+              letterSpacing: 0.5,
+            ),
           ),
         ],
       ),
     );
   }
 }
-

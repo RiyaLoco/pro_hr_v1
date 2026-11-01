@@ -1,10 +1,10 @@
+import 'package:test_flutter/common/widgets/app_refresh_scroll_view.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:get/get_instance/src/extension_instance.dart';
 import 'package:get/get_navigation/src/extension_navigation.dart';
 import 'package:get/get_state_manager/src/rx_flutter/rx_obx_widget.dart';
 import 'package:test_flutter/common/widgets/custom_sliver_appbar.dart';
-import 'package:test_flutter/data/models/res/leave_request_models.dart';
 import 'package:test_flutter/features/hrms_app/controllers/leave_controller.dart';
 import 'package:test_flutter/features/hrms_app/screens/leave/leave_screen_detail.dart';
 import 'package:test_flutter/features/hrms_app/screens/leave/leaving_request_screen.dart';
@@ -30,7 +30,8 @@ class LeaveScreen extends StatelessWidget {
         onPressed: () => Get.to(() => const LeavingRequestScreen()),
         child: const Icon(Icons.add, color: Colors.white),
       ),
-      body: CustomScrollView(
+      body: AppRefreshScrollView(
+        onRefresh: controller.fetchLeaveRequests,
         slivers: [
           CustomSliverAppBar(
             title: 'Leave',
@@ -71,7 +72,8 @@ class LeaveScreen extends StatelessWidget {
                           : Sizes.spaceBtwItems,
                     ),
                     child: GestureDetector(
-                      onTap: ()=> Get.to(()=> LeaveScreenDetail(request: request)),
+                      onTap: () =>
+                          Get.to(() => LeaveScreenDetail(request: request)),
                       child: LeaveRequestTile(request: request),
                     ),
                   );

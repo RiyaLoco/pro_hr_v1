@@ -1,7 +1,9 @@
+import 'package:test_flutter/features/hrms_app/controllers/punch_countroller.dart';
+import 'package:test_flutter/features/hrms_app/controllers/recruitment_controller.dart';
+import 'package:test_flutter/common/widgets/app_refresh_scroll_view.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:test_flutter/common/widgets/custom_sliver_appbar.dart';
-import 'package:test_flutter/common/widgets/section_header.dart';
 import 'package:test_flutter/data/services/app_url_service.dart';
 import 'package:test_flutter/features/authentication/controllers/login_controller.dart';
 import 'package:test_flutter/features/hrms_app/controllers/home_controller.dart';
@@ -25,67 +27,76 @@ class HomeScreen extends StatelessWidget {
       body: Obx(() {
         final user = loginController.user.value;
         final userName = user?.user?.name ?? user?.user?.name ?? 'Guest';
-        final userAvatar = user?.user?.avatarUrl;
+        final userAvatar = controllerProfile.avatarUrl.value;
         final position = controllerProfile.position.value;
-          return CustomScrollView(
-            controller: controller.scrollController,
-            slivers: [
-               CustomSliverAppBar(
-                title: 'Hello, $userName',
-                subtitle: position,
-                image: userAvatar != null ? AppUrlService.fileUrl(userAvatar) : ImageString.profile1,
-                isShowProfile: true,
-              ),
-              // Obx(() => SliverAppBar(
-              //       backgroundColor: PColor.primary,
-              //       expandedHeight: controller.expandedHeight,
-              //       floating: false,
-              //       pinned: true,
-              //       automaticallyImplyLeading: false,
-          
-              //       title: controller.isCollapsed.value
-              //           ? CollapsedTitle()
-              //           : null,
-              //       flexibleSpace: FlexibleSpaceBar(
-              //         titlePadding: EdgeInsets.zero,
-              //         background: ExpandedAppBar(),
-              //       ),
-              //       bottom: PreferredSize(
-              //         preferredSize: Size.fromHeight(controller.bottomCurveHeight),
-              //         child: Container(
-              //           height: controller.bottomCurveHeight,
-              //           width: double.infinity,
-              //           decoration: BoxDecoration(
-              //             color: Colors.grey[100],
-              //             borderRadius: const BorderRadius.only(
-              //               topLeft: Radius.circular(30),
-              //               topRight: Radius.circular(30),
-              //             ),
-              //           ),
-              //         ),
-              //       ),
-              //     )),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16,vertical: 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const AttendanceCard(),
-                      const SizedBox(height: Sizes.spaceBtwItems),
-                      const MenuGrid(),
-                      const SizedBox(height: Sizes.spaceBtwItems),
-                      const RecruitmentSection(),
-                      const SizedBox(height: Sizes.spaceBtwItems),
-                      
-                    ],
-                  ),
+        return AppRefreshScrollView(
+          onRefresh: () async {
+            await Future.wait([
+              Get.find<PunchController>().fetchToday(),
+              Get.find<RecruitmentController>().fetchRecruitments(),
+            ]);
+          },
+          controller: controller.scrollController,
+          slivers: [
+            CustomSliverAppBar(
+              title: 'Hello, $userName',
+              subtitle: position,
+              image: userAvatar != null
+                  ? AppUrlService.fileUrl(userAvatar)
+                  : ImageString.profile1,
+              isShowProfile: true,
+            ),
+            // Obx(() => SliverAppBar(
+            //       backgroundColor: PColor.primary,
+            //       expandedHeight: controller.expandedHeight,
+            //       floating: false,
+            //       pinned: true,
+            //       automaticallyImplyLeading: false,
+
+            //       title: controller.isCollapsed.value
+            //           ? CollapsedTitle()
+            //           : null,
+            //       flexibleSpace: FlexibleSpaceBar(
+            //         titlePadding: EdgeInsets.zero,
+            //         background: ExpandedAppBar(),
+            //       ),
+            //       bottom: PreferredSize(
+            //         preferredSize: Size.fromHeight(controller.bottomCurveHeight),
+            //         child: Container(
+            //           height: controller.bottomCurveHeight,
+            //           width: double.infinity,
+            //           decoration: BoxDecoration(
+            //             color: Colors.grey[100],
+            //             borderRadius: const BorderRadius.only(
+            //               topLeft: Radius.circular(30),
+            //               topRight: Radius.circular(30),
+            //             ),
+            //           ),
+            //         ),
+            //       ),
+            //     )),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 20,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const AttendanceCard(),
+                    const SizedBox(height: Sizes.spaceBtwItems),
+                    const MenuGrid(),
+                    const SizedBox(height: Sizes.spaceBtwItems),
+                    const RecruitmentSection(),
+                    const SizedBox(height: Sizes.spaceBtwItems),
+                  ],
                 ),
               ),
-            ],
-          );
-        }
-      ),
+            ),
+          ],
+        );
+      }),
     );
   }
 }

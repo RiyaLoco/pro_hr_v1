@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:get/get_core/src/get_main.dart';
-import 'package:get/get_instance/src/extension_instance.dart';
-import 'package:get/get_state_manager/src/rx_flutter/rx_obx_widget.dart';
+import 'package:get/get.dart';
 import 'package:test_flutter/features/hrms_app/controllers/schedule_controller.dart';
 import 'package:test_flutter/utils/constants/colors.dart';
 
@@ -14,10 +12,9 @@ const List<String> _kWeekdayLabels = [
   'SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT',
 ];
 
-/// A month-grid calendar (prev/next header, weekday row, 6x7 day
-/// grid) driven by [ScheduleController]. Selecting a day updates
-/// `controller.selectedDate`; the selected day is highlighted with
-/// a filled circle.
+/// Month calendar driven by [ScheduleController]: prev/next header, weekday
+/// row, 6x7 day grid. The selected day is a filled circle, today has a ring,
+/// and days with a working shift get a small dot.
 class MonthCalendar extends StatelessWidget {
   const MonthCalendar({super.key});
 
@@ -27,7 +24,8 @@ class MonthCalendar extends StatelessWidget {
 
     return Obx(() {
       final month = controller.currentMonth.value;
-      final days = _buildGridDays(month);
+      final start = ScheduleController.gridStart(month);
+      final days = List.generate(42, (i) => start.add(Duration(days: i)));
 
       return Column(
         children: [
@@ -72,67 +70,92 @@ class MonthCalendar extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           GridView.count(
+            // Without this, a GridView adds the phone's status-bar / home-bar
+            // insets as padding, which is what left the big gaps above and
+            // below the dates.
+            padding: EdgeInsets.zero,
             crossAxisCount: 7,
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             childAspectRatio: 1.1,
             children: days
-                .map((day) => _DayCell(day: day, controller: controller))
+                .map((day) => _DayCell(day: day, month: month, controller: controller))
                 .toList(),
           ),
         ],
       );
     });
   }
-
-  List<DateTime> _buildGridDays(DateTime month) {
-    final firstOfMonth = DateTime(month.year, month.month, 1);
-    // DateTime.weekday: Mon=1 ... Sun=7. We want the grid to start on
-    // the Sunday on/before the 1st, so Sunday itself needs 0 leading days.
-    final leadingDays = firstOfMonth.weekday % 7;
-    final gridStart = firstOfMonth.subtract(Duration(days: leadingDays));
-    return List.generate(42, (i) => gridStart.add(Duration(days: i)));
-  }
 }
 
 class _DayCell extends StatelessWidget {
   final DateTime day;
+  final DateTime month;
   final ScheduleController controller;
 
-  const _DayCell({required this.day, required this.controller});
+  const _DayCell({required this.day, required this.month, required this.controller});
 
   @override
   Widget build(BuildContext context) {
-    final isCurrentMonth = day.month == controller.currentMonth.value.month;
-    final isSelected = _isSameDate(day, controller.selectedDate.value);
+    // Each cell has its own Obx. The cells are built after the parent Obx
+    // finishes, so without this the highlight would not follow taps.
+    return Obx(() {
+      final isCurrentMonth = day.month == month.month;
+      final selected = controller.selectedDate.value;
+      final isSelected = day.year == selected.year &&
+          day.month == selected.month &&
+          day.day == selected.day;
+      final now = DateTime.now();
+      final isToday = day.year == now.year && day.month == now.month && day.day == now.day;
+      final hasSchedule = controller.hasSchedule(day);
 
-    return GestureDetector(
-      onTap: () => controller.selectDate(day),
-      child: Center(
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 150),
-          width: 34,
-          height: 34,
-          alignment: Alignment.center,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: isSelected ? PColor.primary : Colors.transparent,
-          ),
-          child: Text(
-            '${day.day}',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              color: isSelected
-                  ? Colors.white
-                  : (isCurrentMonth ? Colors.black87 : Colors.grey[350]),
-            ),
+      return GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => controller.selectDate(day),
+        child: Center(
+          child: Stack(
+            clipBehavior: Clip.none,
+            alignment: Alignment.center,
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                width: 34,
+                height: 34,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: isSelected ? PColor.primary : Colors.transparent,
+                  border: (isToday && !isSelected)
+                      ? Border.all(color: PColor.primary, width: 1.5)
+                      : null,
+                ),
+                child: Text(
+                  '${day.day}',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    color: isSelected
+                        ? Colors.white
+                        : (isCurrentMonth ? Colors.black87 : Colors.grey[350]),
+                  ),
+                ),
+              ),
+              if (hasSchedule)
+                Positioned(
+                  bottom: -5,
+                  child: Container(
+                    width: 5,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: isCurrentMonth ? PColor.primary : PColor.primary.withOpacity(0.4),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+            ],
           ),
         ),
-      ),
-    );
+      );
+    });
   }
-
-  bool _isSameDate(DateTime a, DateTime b) =>
-      a.year == b.year && a.month == b.month && a.day == b.day;
 }

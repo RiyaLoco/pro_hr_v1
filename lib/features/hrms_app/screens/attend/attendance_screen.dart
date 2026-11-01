@@ -1,7 +1,6 @@
+import 'package:test_flutter/common/widgets/app_refresh_scroll_view.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:get/get_core/src/get_main.dart';
-import 'package:get/get_instance/src/extension_instance.dart';
 import 'package:test_flutter/common/widgets/custom_sliver_appbar.dart';
 import 'package:test_flutter/common/widgets/section_header.dart';
 import 'package:test_flutter/features/hrms_app/controllers/attendance_controller.dart';
@@ -18,10 +17,12 @@ class AttendanceScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.find<HomeController>();
+    final attendanceController = Get.put(AttendanceController());
     return Scaffold(
       backgroundColor: Colors.grey[100],
       body: Obx(() {
-        return CustomScrollView(
+        return AppRefreshScrollView(
+          onRefresh: attendanceController.fetchAttendanceHistory,
           slivers: [
             CustomSliverAppBar(
               title: 'Attendance',
@@ -30,7 +31,10 @@ class AttendanceScreen extends StatelessWidget {
             ),
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16,vertical: 20),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 20,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

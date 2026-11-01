@@ -1,3 +1,4 @@
+import 'package:test_flutter/common/widgets/app_refresh_scroll_view.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:test_flutter/common/widgets/custom_sliver_appbar.dart';
@@ -18,7 +19,8 @@ class LeavingRequestScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: Colors.grey[100],
-      body: CustomScrollView(
+      body: AppRefreshScrollView(
+        onRefresh: controller.loadLeaveTypes,
         slivers: [
           CustomSliverAppBar(
             title: 'Leaving Request',
@@ -91,7 +93,9 @@ class LeavingRequestScreen extends StatelessWidget {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed: controller.isSubmitting.value ? null : controller.submit,
+                        onPressed: controller.isSubmitting.value
+                            ? null
+                            : controller.submit,
                         style: ElevatedButton.styleFrom(
                           backgroundColor: PColor.primary,
                           padding: const EdgeInsets.symmetric(vertical: 16),
@@ -103,11 +107,18 @@ class LeavingRequestScreen extends StatelessWidget {
                             ? const SizedBox(
                                 height: 20,
                                 width: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
                               )
                             : const Text(
                                 'Submit',
-                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                ),
                               ),
                       ),
                     ),

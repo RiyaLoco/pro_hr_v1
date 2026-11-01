@@ -48,6 +48,10 @@ dependencies:
   dio: ^5.9.2
   image_picker: ^1.2.4
   file_picker: ^13.1.0
+  google_maps_flutter: ^2.18.1
+  mobile_scanner: ^7.4.2
+  geolocator: ^14.0.1
+
 
 dev_dependencies:
   flutter_test:

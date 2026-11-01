@@ -1,6 +1,8 @@
 import 'package:dio/dio.dart';
 import 'package:test_flutter/data/models/res/leave_request_models.dart';
+import 'package:test_flutter/data/models/res/punch_models.dart';
 import 'package:test_flutter/data/models/res/recruitment_models.dart';
+import 'package:test_flutter/data/models/res/schedule_models.dart';
 import 'package:test_flutter/data/models/res/user_models.dart';
 import 'package:test_flutter/data/services/app_url_service.dart';
 
@@ -142,7 +144,7 @@ class ApiController {
     // if (code >= 200 && code < 300) return body;
     final httpOk = code >= 200 && code < 300;
     final apiOk = body['success'] != false;
-    if(httpOk && apiOk) return body;
+    if (httpOk && apiOk) return body;
 
     final errors = <String, List<String>>{};
     final rawErrors = body['errors'];
@@ -158,6 +160,145 @@ class ApiController {
       statusCode: code,
       fieldErrors: errors,
     );
+  }
+
+  Future<List<PunchType>> fetchAttendanceTypes() async {
+    final response = await dio.get(AppUrlService.attendanceTypes);
+    final body = _unwrap(response);
+    final data = body['data'];
+    final rows = data is Map ? data['data'] : data;
+    if (rows is! List) {
+      throw ApiException('The server did not return an attendance type list.');
+    }
+    final types = <PunchType>[];
+    for (final row in rows) {
+      if (row is! Map<String, dynamic>) continue;
+      try {
+        types.add(PunchType.fromJson(row));
+      } on FormatException {
+        // Never send a fabricated ID (such as 0) for a malformed API row.
+      }
+    }
+    if (types.isEmpty) {
+      throw ApiException(
+        'No valid attendance types were returned. Please contact your administrator.',
+      );
+    }
+    return types;
+  }
+
+  Future<TodayAttendance> fetchTodayAttendance() async {
+    final response = await dio.get(AppUrlService.attendanceToday);
+    return TodayAttendance.fromJson(_unwrap(response));
+  }
+
+  /// Sends the phone's GPS position; the server compares it with the
+  /// employee's branch location and radius.
+  ///
+  /// Being outside the radius is a normal answer (HTTP 422 with
+  /// isCheckinRange:false), so it comes back as a [PunchResult] with
+  /// success == false. Anything else that goes wrong throws an ApiException
+  /// (already checked in, not linked to an employee, ...).
+  Future<PunchResult> recordAttendance({
+    required bool isCheckIn,
+    required int attendanceTypeId,
+    required double latitude,
+    required double longitude,
+    String? qrCode,
+  }) async {
+    final response = await dio.post(
+      isCheckIn
+          ? AppUrlService.attendanceCheckIn
+          : AppUrlService.attendanceCheckOut,
+      data: {
+        'attendance_type_id': attendanceTypeId,
+        'latitude': latitude,
+        'longitude': longitude,
+        // The API does not read this yet; sent so the server can validate it later.
+        'qr_code': ?qrCode,
+      },
+    );
+
+    final data = response.data;
+    final body = data is Map<String, dynamic> ? data : <String, dynamic>{};
+
+    if (response.statusCode == 422 && body['isCheckinRange'] == false) {
+      return PunchResult.fromJson(body);
+    }
+    return PunchResult.fromJson(_unwrap(response));
+  }
+
+  Future<List<WorkSchedule>> fetchSchedules({
+    required String from,
+    required String to,
+  }) async {
+    final items = <WorkSchedule>[];
+    var page = 1;
+    var lastPage = 1;
+
+    do {
+      final response = await dio.get(
+        AppUrlService.schedules,
+        queryParameters: {
+          'from': from,
+          'to': to,
+          'per_page': 100,
+          'page': page,
+        },
+      );
+      final body = _unwrap(response);
+
+      items.addAll(
+        (body['data'] as List).map(
+          (e) => WorkSchedule.fromJson(e as Map<String, dynamic>),
+        ),
+      );
+      lastPage = int.tryParse('${(body['meta'] as Map?)?['last_page']}') ?? 1;
+      page++;
+    } while (page <= lastPage && page <= 5);
+
+    return items;
+  }
+
+  Future<List<ShiftOption>> fetchShiftOptions() async {
+    final response = await dio.get(AppUrlService.shiftOptions);
+    final body = _unwrap(response);
+    return (body['data'] as List)
+        .map((e) => ShiftOption.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// The employee's own shift requests, newest first.
+  Future<List<ShiftRequestItem>> fetchShiftRequests() async {
+    final response = await dio.get(
+      AppUrlService.shiftRequests,
+      queryParameters: {'per_page': 100},
+    );
+    final body = _unwrap(response);
+    return (body['data'] as List)
+        .map((e) => ShiftRequestItem.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  Future<void> submitShiftRequest({
+    required int scheduleDetailId,
+    required int newShiftId,
+    required String reason,
+  }) async {
+    final response = await dio.post(
+      AppUrlService.shiftRequests,
+      data: {
+        'schedule_detail': scheduleDetailId,
+        'new_shift': newShiftId,
+        'reason': reason.trim(),
+      },
+    );
+    _unwrap(response);
+  }
+
+  Future<void> cancelShiftRequest(int id) async {
+    final response = await dio.delete('${AppUrlService.shiftRequests}/$id');
+    _unwrap(response);
   }
 }
 

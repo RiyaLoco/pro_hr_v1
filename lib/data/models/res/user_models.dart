@@ -46,6 +46,7 @@ class User {
   final String? name;
   final String? shortName;
   final String? email;
+  final String? phone;
   final String? username;
   final String? status;
   final String? avatar;
@@ -59,6 +60,7 @@ class User {
     this.name,
     this.shortName,
     this.email,
+    this.phone,
     this.username,
     this.status,
     this.avatar,
@@ -74,6 +76,7 @@ class User {
       name: json['name']?.toString(),
       shortName: json['short_name']?.toString(),
       email: json['email']?.toString(),
+      phone: _phoneFromJson(json),
       username: json['username']?.toString(),
       status: json['status']?.toString(),
       avatar: json['avatar']?.toString(),
@@ -91,5 +94,15 @@ class User {
   static int? _toInt(dynamic value) {
     if (value is int) return value;
     return int.tryParse(value?.toString() ?? '');
+  }
+
+  static String? _phoneFromJson(Map<String, dynamic> json) {
+    for (final key in ['phone', 'phone_number', 'mobile', 'mobile_number']) {
+      final value = json[key];
+      if (value is! String && value is! num) continue;
+      final phone = value.toString().trim();
+      if (phone.isNotEmpty) return phone;
+    }
+    return null;
   }
 }

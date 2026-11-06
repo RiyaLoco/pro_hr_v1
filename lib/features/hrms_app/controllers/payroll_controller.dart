@@ -36,7 +36,7 @@ class Payslip {
 }
 
 class PayRollController extends GetxController {
-  final RxDouble yearToDateEarning = 4200.00.obs;
+  final RxDouble yearToDateEarning = 3600.00.obs;
   final RxList<Payslip> payslips = <Payslip>[].obs;
   final RxBool isLoading = false.obs;
 
@@ -51,30 +51,30 @@ class PayRollController extends GetxController {
     try {
       payslips.value = [
         Payslip(
-          month: 'January 2024',
+          month: 'October 2026',
           status: 'Paid',
-          processedLabel: 'Processed on 31 Jan 2024',
-          listNet: 350,
-          listGross: 450,
+          processedLabel: 'Processed on 10 Oct 2026',
+          listNet: 300,
+          listGross: 370,
           paidOnLabel: 'Paid on 1 Feb 2024',
-          netTakeHome: 420,
+          netTakeHome: 370,
           earnings: [
-            PayslipLineItem(label: 'Basic Salary', amount: 350),
-            PayslipLineItem(label: 'Overtime Pay', amount: 70),
+            PayslipLineItem(label: 'Basic Salary', amount: 300),
+            PayslipLineItem(label: 'Overtime Pay', amount: 50),
             PayslipLineItem(label: 'Performance/Transport', amount: 30),
           ],
           deductions: [
-            PayslipLineItem(label: 'Tax', amount: 500.00),
-            PayslipLineItem(label: 'Insurance', amount: 500.00),
+            PayslipLineItem(label: 'Tax', amount: 00.00),
+            PayslipLineItem(label: 'Insurance', amount: 10.00),
           ],
         ),
         Payslip(
-          month: 'February 2024',
-          status: 'Pending',
-          processedLabel: 'Processed on 28 Feb 2024',
-          listNet: 4200.00,
-          listGross: 5200.00,
-          paidOnLabel: 'Paid on 1 Mar 2024',
+          month: 'September 2026',
+          status: 'Paid',
+          processedLabel: 'Processed on 10 Sep 2026',
+          listNet: 300.00,
+          listGross: 350.00,
+          paidOnLabel: 'Paid on 1 Sep 2024',
           netTakeHome: 4200.00,
           earnings: [
             PayslipLineItem(label: 'Basic Salary', amount: 3200.00),
@@ -86,21 +86,21 @@ class PayRollController extends GetxController {
           ],
         ),
         Payslip(
-          month: 'May 2026',
+          month: 'August 2026',
           status: 'Paid',
-          processedLabel: 'Processed on May 10, 2026',
-          listNet: 350,
+          processedLabel: 'Processed on Aug 10, 2026',
+          listNet: 300,
           listGross: null,
-          paidOnLabel: 'Paid on May 10, 2026',
+          paidOnLabel: 'Paid on Aug 10, 2026',
           netTakeHome: 350,
           earnings: const [PayslipLineItem(label: 'Basic Salary', amount: 350)],
           deductions: const [],
         ),
         Payslip(
-          month: 'April 2026',
+          month: 'July 2026',
           status: 'Paid',
-          processedLabel: 'Processed on Apr 10, 2026',
-          listNet: 350,
+          processedLabel: 'Processed on July 10, 2026',
+          listNet: 300,
           listGross: null,
           paidOnLabel: 'Paid on April 10, 2026',
           netTakeHome: 350,

@@ -1,23 +1,34 @@
 import 'package:flutter/material.dart';
+import 'package:test_flutter/data/models/res/attendance_summary_models.dart';
 import 'package:test_flutter/common/widgets/app_container.dart';
 import 'package:test_flutter/utils/constants/colors.dart';
 
 class AttendanceStatsRow extends StatelessWidget {
-  const AttendanceStatsRow({super.key});
+  const AttendanceStatsRow({super.key, required this.summary});
+
+  final AttendanceSummary summary;
+
+  String _value(double? value, String unit) =>
+      value == null ? '—' : '${formatAttendanceNumber(value)}$unit';
 
   @override
   Widget build(BuildContext context) {
     return Row(
       children: [
-        Expanded(child: _statCard('120h', 'TOTAL HOURS')),
+        Expanded(
+          child: _statCard(_value(summary.totalHours, 'h'), 'TOTAL HOURS'),
+        ),
         const SizedBox(width: 12),
-        Expanded(child: _statCard('89%', 'ON TIME')),
+        Expanded(
+          child: _statCard(_value(summary.onTimePercentage, '%'), 'ON TIME'),
+        ),
         const SizedBox(width: 12),
-        Expanded(child: _statCard('12d', 'LEAVE')),
+        Expanded(child: _statCard(_value(summary.leaveDays, 'd'), 'LEAVE')),
       ],
     );
   }
-    Widget _statCard(String value, String label) {
+
+  Widget _statCard(String value, String label) {
     return AppContainer(
       padding: const EdgeInsets.symmetric(vertical: 16),
       borderRadius: 10,
@@ -31,7 +42,7 @@ class AttendanceStatsRow extends StatelessWidget {
               color: PColor.primary,
             ),
           ),
-          
+
           Text(
             label,
             textAlign: TextAlign.center,

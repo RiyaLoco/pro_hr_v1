@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:test_flutter/data/models/res/attendance_summary_models.dart';
 import 'package:test_flutter/common/widgets/app_container.dart';
 import 'package:test_flutter/utils/constants/colors.dart';
 import 'package:test_flutter/utils/constants/size.dart';
 
-
 class WeeklyProgressCard extends StatelessWidget {
-  const WeeklyProgressCard({super.key});
+  const WeeklyProgressCard({super.key, required this.progress});
+
+  final WeeklyAttendanceProgress progress;
 
   @override
   Widget build(BuildContext context) {
-   const double progress = 37 / 40;
- 
     return AppContainer(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
@@ -38,7 +38,7 @@ class WeeklyProgressCard extends StatelessWidget {
                   width: 200,
                   height: 200,
                   child: CircularProgressIndicator(
-                    value: progress,
+                    value: progress.progress,
                     strokeWidth: 14,
                     backgroundColor: Colors.grey[300],
                     valueColor: AlwaysStoppedAnimation<Color>(PColor.primary),
@@ -47,9 +47,9 @@ class WeeklyProgressCard extends StatelessWidget {
                 ),
                 Column(
                   mainAxisSize: MainAxisSize.min,
-                  children: const [
+                  children: [
                     Text(
-                      '37/40',
+                      progress.hoursLabel,
                       style: TextStyle(
                         fontSize: 34,
                         fontWeight: FontWeight.bold,
@@ -73,7 +73,7 @@ class WeeklyProgressCard extends StatelessWidget {
           ),
           const SizedBox(height: Sizes.defaultSpace),
           Text(
-            "You're on track to meet your weekly goal.",
+            progress.message,
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 14,

@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:test_flutter/data/models/res/attendance_history_models.dart';
 import 'package:test_flutter/data/models/res/leave_request_models.dart';
 import 'package:test_flutter/data/models/res/punch_models.dart';
 import 'package:test_flutter/data/models/res/recruitment_models.dart';
@@ -187,9 +188,30 @@ class ApiController {
     return types;
   }
 
+  Future<AttendanceHistoryPage> fetchAttendance({int page = 1}) async {
+    final response = await dio.get(
+      AppUrlService.attendance,
+      queryParameters: {'page': page},
+    );
+    final result = AttendanceHistoryPage.fromJson(_unwrap(response));
+    if (result.currentPage != page) {
+      throw const FormatException(
+        'The server returned a different history page.',
+      );
+    }
+    return result;
+  }
+
   Future<TodayAttendance> fetchTodayAttendance() async {
     final response = await dio.get(AppUrlService.attendanceToday);
-    return TodayAttendance.fromJson(_unwrap(response));
+    final body = _unwrap(response);
+    final data = body['data'];
+    if (data is! List || data.any((row) => row is! Map<String, dynamic>)) {
+      throw const FormatException(
+        'Expected attendance records in a data list.',
+      );
+    }
+    return TodayAttendance.fromJson(body);
   }
 
   /// Sends the phone's GPS position; the server compares it with the

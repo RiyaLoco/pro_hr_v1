@@ -6,6 +6,7 @@ class AppUrlService {
   static const String leaveTypes = '/employee/leave-requests/types';
   static const String leaveRequests = '/employee/leave-requests';
   static const String recruitments = '/recruitments';
+  static const String attendance = '/employee/attendance';
   static const String attendanceToday = '/employee/attendance/today';
   static const String attendanceCheckIn = '/employee/attendance/check-in';
   static const String attendanceCheckOut = '/employee/attendance/check-out';
@@ -13,6 +14,33 @@ class AppUrlService {
   static const String schedules = '/employee/schedules';
   static const String shiftOptions = '/employee/shifts';
   static const String shiftRequests = '/employee/shift-requests';
+
+  /// Resolves Laravel public-disk attachments for the API server in use.
+  static String attachmentUrl(String path) {
+    path = path.trim();
+    if (path.startsWith('//')) {
+      path = '${Uri.parse(baseUrl).scheme}:$path';
+    }
+    final uri = Uri.tryParse(path);
+    if (uri != null && (uri.scheme == 'http' || uri.scheme == 'https')) {
+      final host = uri.host.toLowerCase();
+      if (host == 'localhost' ||
+          host == '127.0.0.1' ||
+          host == '0.0.0.0' ||
+          host == '::1') {
+        final api = Uri.parse(baseUrl);
+        return uri
+            .replace(scheme: api.scheme, host: api.host, port: api.port)
+            .toString();
+      }
+      return path;
+    }
+    if (path.startsWith('/')) return fileUrl(path);
+    // `attachment` stores a public disk key, e.g. leave-requests/report.pdf.
+    if (path.startsWith('public/')) path = path.substring('public/'.length);
+    if (!path.startsWith('storage/')) path = 'storage/$path';
+    return fileUrl(path);
+  }
 
   static String fileUrl(String path) {
     path = path.trim();

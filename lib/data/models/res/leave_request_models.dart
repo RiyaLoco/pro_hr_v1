@@ -88,6 +88,12 @@ String? _parseReviewer(dynamic value) {
   return text.isEmpty || num.tryParse(text) != null ? null : text;
 }
 
+String? _attachmentText(dynamic value) {
+  if (value is! String) return null;
+  final text = value.trim();
+  return text.isEmpty || text.toLowerCase() == 'null' ? null : text;
+}
+
 class LeaveRequest {
   final String id;
   final int leaveTypeId;
@@ -128,7 +134,9 @@ class LeaveRequest {
         ? (rawStatus['name'] ?? rawStatus['value'] ?? rawStatus['status'])
         : rawStatus;
     final statusText = statusValue?.toString().trim().toLowerCase() ?? '';
-    final attachment = json['attachment_url']?.toString().trim();
+    final attachment =
+        _attachmentText(json['attachment_url']) ??
+        _attachmentText(json['attachment']);
     return LeaveRequest(
       id: '${json['id']}',
       leaveTypeId: int.tryParse('${type?['id'] ?? json['leave_type_id']}') ?? 0,
@@ -140,11 +148,15 @@ class LeaveRequest {
       reason: '${json['reason'] ?? ''}',
       status: parseLeaveStatus(statusValue?.toString()) ?? LeaveStatus.pending,
       rawStatus: statusText,
-      attachmentUrl: (attachment == null || attachment.isEmpty) ? null : attachment,
-      requestedAt: _parseDateTime(json['requested_at'] ??json['created_at']),
-      approvedBy: _parseReviewer(json['approved_by_name']) ??
+      attachmentUrl: (attachment == null || attachment.isEmpty)
+          ? null
+          : attachment,
+      requestedAt: _parseDateTime(json['requested_at'] ?? json['created_at']),
+      approvedBy:
+          _parseReviewer(json['approved_by_name']) ??
           _parseReviewer(json['approved_by']),
-      rejectedBy: _parseReviewer(json['rejected_by_name']) ??
+      rejectedBy:
+          _parseReviewer(json['rejected_by_name']) ??
           _parseReviewer(json['rejected_by']),
     );
   }

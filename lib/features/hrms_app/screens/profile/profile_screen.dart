@@ -169,12 +169,12 @@ class _InfoRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 14),
       child: Row(
         children: [
-          Icon(icon, size: 18, color: PColor.primary),
+          Icon(icon, size: 16, color: PColor.primary),
           const SizedBox(width: 12),
           Expanded(
             child: Text(label, style: TextStyle(fontSize: 13, color: PColor.textColor)),
           ),
-          Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black87)),
+          Expanded(child: Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: PColor.primary))),
         ],
       ),
     );

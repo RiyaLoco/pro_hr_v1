@@ -6,7 +6,7 @@ import 'package:test_flutter/data/services/app_url_service.dart';
 import 'package:test_flutter/features/authentication/controllers/login_controller.dart';
 import 'package:test_flutter/utils/constants/colors.dart';
 import 'package:test_flutter/utils/constants/image_string.dart';
-import 'package:url_launcher/url_launcher.dart';
+import 'package:test_flutter/features/hrms_app/screens/leave/widgets/leave_attachment_view.dart';
 
 import '../../controllers/home_controller.dart';
 
@@ -155,7 +155,7 @@ class LeaveScreenDetail extends StatelessWidget {
                     _SectionTitle('Attachments'),
                     Divider(color: Colors.grey[300], height: 1),
                     const SizedBox(height: 12),
-                    _AttachmentView(url: AppUrlService.fileUrl(r.attachmentUrl!)),
+                    LeaveAttachmentView(url: AppUrlService.attachmentUrl(r.attachmentUrl!)),
                   ],
                 ],
               ),
@@ -275,136 +275,6 @@ class _StatusRow extends StatelessWidget {
           style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: color),
         ),
       ],
-    );
-  }
-}
-
-class _AttachmentView extends StatelessWidget {
-  final String url;
-
-  const _AttachmentView({required this.url});
-
-  bool get _isImage {
-    final path = Uri.tryParse(url)?.path.toLowerCase() ?? '';
-    return ['.jpg', '.jpeg', '.png', '.webp'].any(path.endsWith);
-  }
-
-  String get _fileName {
-    final segments = Uri.tryParse(url)?.pathSegments ?? const [];
-    return segments.isEmpty ? 'Attachment' : segments.last;
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return _isImage ? _buildImage(context) : _buildFileTile();
-  }
-
-  Widget _buildImage(BuildContext context) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: GestureDetector(
-        onTap: () => _openFullscreen(context),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(16),
-          child: SizedBox(
-            width: 170,
-            height: 200,
-            child: Image.network(
-              url,
-              fit: BoxFit.cover,
-              loadingBuilder: (context, child, progress) {
-                if (progress == null) return child;
-                return Container(
-                  color: Colors.grey[300],
-                  alignment: Alignment.center,
-                  child: const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  ),
-                );
-              },
-              errorBuilder: (_, _, _) => Container(
-                color: Colors.grey[300],
-                alignment: Alignment.center,
-                child: Icon(Icons.broken_image_outlined, color: PColor.textColor),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildFileTile() {
-    return InkWell(
-      onTap: _openExternally,
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: PColor.primary.withOpacity(0.4)),
-        ),
-        child: Row(
-          children: [
-            Icon(Icons.description_outlined, color: PColor.primary),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                _fileName,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(fontSize: 14, color: PColor.textColor),
-              ),
-            ),
-            const SizedBox(width: 8),
-            Icon(Icons.open_in_new, size: 18, color: PColor.primary),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _openExternally() async {
-    try {
-      final opened = await launchUrl(
-        Uri.parse(url),
-        mode: LaunchMode.externalApplication,
-      );
-      if (!opened) throw Exception('Could not open file');
-    } catch (_) {
-      Get.snackbar('Error', 'Could not open this file.');
-    }
-  }
-
-  void _openFullscreen(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => Dialog.fullscreen(
-        backgroundColor: Colors.black,
-        child: Stack(
-          children: [
-            Positioned.fill(
-              child: InteractiveViewer(
-                minScale: 1,
-                maxScale: 4,
-                child: Center(child: Image.network(url, fit: BoxFit.contain)),
-              ),
-            ),
-            SafeArea(
-              child: Align(
-                alignment: Alignment.topRight,
-                child: IconButton(
-                  onPressed: () => Navigator.of(dialogContext).pop(),
-                  icon: const Icon(Icons.close, color: Colors.white),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

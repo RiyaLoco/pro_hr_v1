@@ -1,195 +1,150 @@
 import 'package:flutter/material.dart';
-import 'package:get/get_core/src/get_main.dart';
-import 'package:get/get_instance/src/extension_instance.dart';
-import 'package:get/get_navigation/src/extension_navigation.dart';
-import 'package:get/get_rx/src/rx_types/rx_types.dart';
-import 'package:get/get_state_manager/src/simple/get_controllers.dart';
+import 'package:get/get.dart';
+import 'package:test_flutter/data/models/res/overtime_models.dart';
 import 'package:test_flutter/features/hrms_app/controllers/overtime_controller.dart';
 import 'package:test_flutter/features/hrms_app/screens/leave/widgets/selection_bottom_sheet.dart';
 import 'package:test_flutter/utils/constants/colors.dart';
-import 'package:test_flutter/utils/constants/image_string.dart';
 
-/// Controller backing the Overtime Request form screen.
 class OvertimeRequestController extends GetxController {
-  static const List<SelectionOption> hoursOptions = [
-    SelectionOption(value: '1 Hour', title: '1 Hour'),
-    SelectionOption(value: '2 Hours', title: '2 Hours'),
-    SelectionOption(value: '3 Hours', title: '3 Hours'),
-    SelectionOption(value: '4 Hours', title: '4 Hours'),
-    SelectionOption(value: 'Custom', title: 'Custom'),
-  ];
+  OvertimeRequestController({OvertimeController? overtime})
+    : _overtime = overtime;
+  final OvertimeController? _overtime;
+  OvertimeController get overtime =>
+      _overtime ?? Get.find<OvertimeController>();
 
-  static const List<SelectionOption> rateOptions = [
-    SelectionOption(value: '1.5x', title: '1.5x — Weekday'),
-    SelectionOption(value: '2x', title: '2x — Weekend'),
-    SelectionOption(value: '3x', title: '3x — Public Holiday'),
-  ];
+  final reasonController = TextEditingController();
+  final Rxn<DateTime> date = Rxn<DateTime>();
+  final Rxn<TimeOfDay> startTime = Rxn<TimeOfDay>();
+  final Rxn<TimeOfDay> endTime = Rxn<TimeOfDay>();
+  final Rxn<OtRate> rate = Rxn<OtRate>();
+  final RxnString validationError = RxnString();
 
-  // TODO: replace with real approvers (e.g. fetched from an API),
-  // including their actual avatar images instead of the placeholder.
-  static const List<SelectionOption> authorizeOptions = [
-    SelectionOption(
-      value: 'Mr Khiev Sovan',
-      title: 'Mr Khiev Sovan',
-      subtitle: 'HR Supervisor',
-      avatar: AssetImage(ImageString.profile1),
-    ),
-    SelectionOption(
-      value: 'Mr Sok chankungkea',
-      title: 'Mr Sok chankungkea',
-      subtitle: 'Chief Information Technology',
-      avatar: AssetImage(ImageString.profile1),
-    ),
-    SelectionOption(
-      value: 'Mr Reth Vathanak',
-      title: 'Mr Reth Vathanak',
-      subtitle: 'Information Technology Officer',
-      avatar: AssetImage(ImageString.profile1),
-    ),
-  ];
+  int _minutes(TimeOfDay time) => time.hour * 60 + time.minute;
+  bool get endsNextDay =>
+      startTime.value != null &&
+      endTime.value != null &&
+      _minutes(endTime.value!) < _minutes(startTime.value!);
+  double? get hours {
+    final start = startTime.value;
+    final end = endTime.value;
+    if (start == null || end == null) return null;
+    var minutes = _minutes(end) - _minutes(start);
+    if (minutes < 0) minutes += 24 * 60;
+    return minutes / 60;
+  }
 
-  final TextEditingController reasonController = TextEditingController();
+  String get dateLabel => date.value == null
+      ? 'Overtime date'
+      : '${date.value!.day}/${date.value!.month}/${date.value!.year}';
+  String get hoursLabel => hours == null
+      ? 'Select start and end times'
+      : '${formatOtNumber(hours!)} ${hours == 1 ? 'hour' : 'hours'}';
 
-  final Rx<DateTime?> startDate = Rx<DateTime?>(null);
-  final Rx<DateTime?> endDate = Rx<DateTime?>(null);
-  final RxnString hoursWorked = RxnString();
-  final RxnString overtimeRate = RxnString();
-  final RxnString certifyAuthorize = RxnString();
-  final RxBool isSubmitting = false.obs;
-
-  String get startDateLabel =>
-      startDate.value == null ? 'Start Date' : _formatDate(startDate.value!);
-
-  String get endDateLabel =>
-      endDate.value == null ? 'End Date' : _formatDate(endDate.value!);
-
-  String get hoursWorkedLabel => hoursWorked.value ?? 'Hours Worked';
-
-  String get overtimeRateLabel => overtimeRate.value ?? 'Overtime Rate';
-
-  String get certifyAuthorizeLabel =>
-      certifyAuthorize.value ?? 'Certify Authorize';
-
-  Future<void> pickStartDate(BuildContext context) async {
-    final result = await showDatePicker(
+  Future<void> pickDate(BuildContext context) async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
       context: context,
-      initialDate: startDate.value ?? DateTime.now(),
-      firstDate: DateTime.now().subtract(const Duration(days: 365)),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
-              primary: PColor.primary,
-              onPrimary: Colors.white,
-              onSurface: PColor.textColor,
-            ),
-            datePickerTheme: DatePickerThemeData(
-              
-              dividerColor: PColor.primary, // the line under the date header
-            ),
-            textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(
-                foregroundColor: PColor.primary,
-                // button text color
-              ),
-            ),
-          ),
-          child: child!,
-        );
-      },
+      initialDate: date.value ?? now,
+      firstDate: DateTime(now.year - 1),
+      lastDate: DateTime(now.year + 1, 12, 31),
+      builder: _theme,
     );
-    if (result != null) startDate.value = result;
+    if (picked != null) date.value = picked;
   }
 
-  Future<void> pickEndDate(BuildContext context) async {
-    final result = await showDatePicker(
+  Future<void> pickTime(BuildContext context, {required bool start}) async {
+    final picked = await showTimePicker(
       context: context,
-      initialDate: endDate.value ?? startDate.value ?? DateTime.now(),
-      firstDate: startDate.value ?? DateTime.now().subtract(const Duration(days: 365)),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
-              primary: PColor.primary,
-              onPrimary: Colors.white,
-              onSurface: PColor.textColor,
-            ),
-            datePickerTheme: DatePickerThemeData(
-              
-              dividerColor: PColor.primary, // the line under the date header
-            ),
-            textButtonTheme: TextButtonThemeData(
-              style: TextButton.styleFrom(
-                foregroundColor: PColor.primary,
-                // button text color
-              ),
-            ),
-          ),
-          child: child!,
-        );
-      },
+      initialTime:
+          (start ? startTime.value : endTime.value) ??
+          (start
+              ? const TimeOfDay(hour: 17, minute: 0)
+              : const TimeOfDay(hour: 19, minute: 0)),
+      builder: _theme,
     );
-    if (result != null) endDate.value = result;
-  }
-
-  Future<void> pickHoursWorked(BuildContext context) async {
-    final result = await SelectionBottomSheet.show(
-      context,
-      title: 'Hours Worked',
-      options: hoursOptions,
-      selectedValue: hoursWorked.value,
-    );
-    if (result != null) hoursWorked.value = result;
-  }
-
-  Future<void> pickOvertimeRate(BuildContext context) async {
-    final result = await SelectionBottomSheet.show(
-      context,
-      title: 'Overtime Rate',
-      options: rateOptions,
-      selectedValue: overtimeRate.value,
-    );
-    if (result != null) overtimeRate.value = result;
-  }
-
-  Future<void> pickCertifyAuthorize(BuildContext context) async {
-    final result = await SelectionBottomSheet.show(
-      context,
-      title: 'Certify Authorize',
-      options: authorizeOptions,
-      selectedValue: certifyAuthorize.value,
-    );
-    if (result != null) certifyAuthorize.value = result;
-  }
-
-  Future<void> submit() async {
-    if (startDate.value == null || endDate.value == null || hoursWorked.value == null) {
-      Get.snackbar('Missing information', 'Please fill in all required fields.');
-      return;
-    }
-
-    isSubmitting.value = true;
-    try {
-      // TODO: send the request to your API / repository here.
-      final overtimeController = Get.find<OvertimeController>();
-      overtimeController.addEntry(
-        OvertimeEntry(
-          date: _formatDate(startDate.value!),
-          title: reasonController.text.isEmpty ? 'Overtime Request' : reasonController.text,
-          hoursLabel: hoursWorked.value!,
-          personLabel: 'Pending with : ${certifyAuthorize.value ?? '-'}',
-          status: OvertimeStatus.pending,
-        ),
-      );
-      Get.back();
-    } finally {
-      isSubmitting.value = false;
+    if (picked != null) {
+      if (start) {
+        startTime.value = picked;
+      } else {
+        endTime.value = picked;
+      }
     }
   }
 
-  String _formatDate(DateTime date) => '${date.day}/${date.month}/${date.year}';
+  Future<void> pickRate(BuildContext context) async {
+    final selected = await SelectionBottomSheet.show(
+      context,
+      title: 'Overtime rate',
+      selectedValue: rate.value?.id.toString(),
+      options: overtime.rates
+          .map(
+            (r) => SelectionOption(
+              value: '${r.id}',
+              title: r.label,
+              subtitle: r.description,
+            ),
+          )
+          .toList(),
+    );
+    if (selected != null) {
+      rate.value = overtime.rates.firstWhere((r) => '${r.id}' == selected);
+    }
+  }
+
+  bool savePreview() {
+    if (date.value == null ||
+        startTime.value == null ||
+        endTime.value == null) {
+      validationError.value =
+          'Choose an overtime date, start time, and end time.';
+      return false;
+    }
+    if (hours == null || hours! <= 0) {
+      validationError.value = 'Start and end times must be different.';
+      return false;
+    }
+    if (rate.value == null) {
+      validationError.value = 'Choose an overtime rate.';
+      return false;
+    }
+    final reason = reasonController.text.trim();
+    if (reason.isEmpty) {
+      validationError.value = 'Enter a reason for overtime.';
+      return false;
+    }
+    validationError.value = null;
+    overtime.addEntry(
+      OtRequest(
+        id: overtime.nextPreviewId,
+        employeeId: 1,
+        date: date.value!,
+        startTime: _apiTime(startTime.value!),
+        endTime: _apiTime(endTime.value!),
+        hours: hours!,
+        otRateId: rate.value!.id,
+        rate: rate.value,
+        reason: reason,
+        status: OvertimeStatus.pending,
+        createdAt: DateTime.now(),
+      ),
+    );
+    overtime.resetFilters();
+    return true;
+  }
+
+  String _apiTime(TimeOfDay time) =>
+      '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}:00';
+
+  Widget _theme(BuildContext context, Widget? child) => Theme(
+    data: Theme.of(context).copyWith(
+      colorScheme: ColorScheme.light(
+        primary: PColor.primary,
+        onPrimary: Colors.white,
+        onSurface: Colors.black87,
+      ),
+    ),
+    child: child!,
+  );
 
   @override
   void onClose() {

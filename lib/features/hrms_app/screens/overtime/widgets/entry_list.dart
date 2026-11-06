@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:get/get_core/src/get_main.dart';
-import 'package:get/get_instance/src/extension_instance.dart';
-import 'package:get/get_state_manager/src/rx_flutter/rx_obx_widget.dart';
+import 'package:get/get.dart';
+import 'package:test_flutter/common/widgets/app_container.dart';
+import 'package:test_flutter/data/models/res/overtime_models.dart';
 import 'package:test_flutter/features/hrms_app/controllers/overtime_controller.dart';
+import 'package:test_flutter/features/hrms_app/screens/overtime/overtime_detail_screen.dart';
+import 'package:test_flutter/features/hrms_app/screens/overtime/widgets/overtime_status_chip.dart';
 import 'package:test_flutter/utils/constants/colors.dart';
-import 'package:test_flutter/utils/constants/size.dart';
 
+/// Sliver list so history stays lazy inside the screen's scroll view.
 class EntryList extends StatelessWidget {
   const EntryList({super.key});
 
@@ -14,103 +16,107 @@ class EntryList extends StatelessWidget {
     final controller = Get.find<OvertimeController>();
     return Obx(() {
       if (controller.isLoading.value) {
-        return const Padding(
-          padding: EdgeInsets.symmetric(vertical: 40),
+        return const SliverToBoxAdapter(
           child: Center(child: CircularProgressIndicator()),
         );
       }
-
       final entries = controller.filteredEntries;
       if (entries.isEmpty) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 40),
-          child: Center(
-            child: Text(
-              'No overtime entries found.',
-              style: TextStyle(color: PColor.textColor),
+        return const SliverToBoxAdapter(
+          child: Padding(
+            padding: EdgeInsets.all(32),
+            child: Center(
+              child: Text('No overtime requests match your search.'),
             ),
           ),
         );
       }
-
-      return Column(
-        children: entries
-            .map(
-              (entry) => Padding(
-                padding: const EdgeInsets.only(bottom: Sizes.spaceBtwItems),
-                child: _EntryTile(entry: entry),
-              ),
-            )
-            .toList(),
+      return SliverPadding(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 96),
+        sliver: SliverList(
+          delegate: SliverChildBuilderDelegate(
+            (context, index) => Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: OvertimeEntryCard(entry: entries[index]),
+            ),
+            childCount: entries.length,
+          ),
+        ),
       );
     });
   }
 }
-class _EntryTile extends StatelessWidget {
-  final OvertimeEntry entry;
 
-  const _EntryTile({required this.entry});
-
-  Color get _statusColor {
-    switch (entry.status) {
-      case OvertimeStatus.pending:
-        return const Color(0xFFE0A93B);
-      case OvertimeStatus.reject:
-        return const Color(0xFFD9534F);
-      case OvertimeStatus.approved:
-        return PColor.primary;
-    }
-  }
+class OvertimeEntryCard extends StatelessWidget {
+  const OvertimeEntryCard({super.key, required this.entry});
+  final OtRequest entry;
 
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.05), blurRadius: 10, offset: const Offset(0, 4)),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(entry.date, style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: PColor.primary)),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                decoration: BoxDecoration(color: _statusColor, borderRadius: BorderRadius.circular(20)),
-                child: Text(
-                  entry.status.label,
-                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Colors.white),
+  Widget build(BuildContext context) => AppContainer(
+    padding: const EdgeInsets.all(16),
+    onTap: () => Get.to(() => OvertimeDetailScreen(request: entry)),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                entry.dateLabel,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w600,
+                  color: PColor.primary,
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Text(entry.title, style: TextStyle(fontSize: 14, color: PColor.textColor)),
-          const SizedBox(height: 12),
-          Divider(color: Colors.grey[200], height: 1),
-          const SizedBox(height: 10),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Icon(Icons.access_time, size: 14, color: PColor.primary),
-                  const SizedBox(width: 4),
-                  Text(entry.hoursLabel, style: TextStyle(fontSize: 13, color: PColor.primary, fontWeight: FontWeight.w600)),
-                ],
+            ),
+            const SizedBox(width: 8),
+            OvertimeStatusChip(status: entry.status),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          entry.reason,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(fontSize: 14, color: PColor.textColor),
+        ),
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 12,
+          runSpacing: 8,
+          children: [
+            Text(
+              entry.timeLabel,
+              style: const TextStyle(color: PColor.textColor, fontSize: 13),
+            ),
+            Text(
+              entry.hoursLabel,
+              style: const TextStyle(
+                color: PColor.primary,
+                fontWeight: FontWeight.w600,
               ),
-              Text(entry.personLabel, style: TextStyle(fontSize: 13, color: PColor.textColor)),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+            ),
+          ],
+        ),
+        const Divider(height: 24),
+        Text(
+          entry.rateLabel,
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13,color: PColor.primary),
+        ),
+        const SizedBox(height: 4),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                entry.reviewerLabel,
+                style: const TextStyle(fontSize: 12, color: PColor.textColor),
+              ),
+            ),
+            const Icon(Icons.chevron_right, size: 18, color: PColor.primary),
+          ],
+        ),
+      ],
+    ),
+  );
 }

@@ -1,56 +1,52 @@
-import 'package:get/get_rx/src/rx_types/rx_types.dart';
-import 'package:get/get_state_manager/src/simple/get_controllers.dart';
+import 'package:get/get.dart';
+import 'package:flutter/material.dart';
+import 'package:test_flutter/data/models/res/overtime_models.dart';
+import 'package:test_flutter/data/preview/overtime_preview_data.dart';
 
-enum OvertimeStatus { pending, reject, approved }
-
-extension OvertimeStatusLabel on OvertimeStatus {
-  String get label {
-    switch (this) {
-      case OvertimeStatus.pending:
-        return 'Pending';
-      case OvertimeStatus.reject:
-        return 'Reject';
-      case OvertimeStatus.approved:
-        return 'Approved';
-    }
-  }
-}
-
-/// Model for a single overtime entry shown under "Recent Entries".
-class OvertimeEntry {
-  final String date; // display string, e.g. 'July 13, 2026'
-  final String title;
-  final String hoursLabel; // e.g. '6 Hours'
-  final String personLabel; // e.g. 'Pending with : Sok Chankungkea'
-  final OvertimeStatus status;
-
-  const OvertimeEntry({
-    required this.date,
-    required this.title,
-    required this.hoursLabel,
-    required this.personLabel,
-    required this.status,
-  });
-}
-
-/// Controller for the Overtime screen — holds summary stats, the
-/// search query, and the list of overtime entries.
 class OvertimeController extends GetxController {
-  final RxString totalApprovedHours = '00h'.obs;
-  final RxString thisMonthHours = '00h'.obs;
-  final RxString searchQuery = ''.obs;
-  final RxList<OvertimeEntry> allEntries = <OvertimeEntry>[].obs;
-  final RxBool isLoading = false.obs;
+  OvertimeController({DateTime Function()? now}) : _now = now ?? DateTime.now;
 
-  /// Entries filtered by [searchQuery] against date and person label.
-  List<OvertimeEntry> get filteredEntries {
+  final DateTime Function() _now;
+  final searchController = TextEditingController();
+  final RxString searchQuery = ''.obs;
+  final Rxn<OvertimeStatus> selectedStatus = Rxn<OvertimeStatus>();
+  final RxList<OtRequest> allEntries = <OtRequest>[].obs;
+  final RxBool isLoading = false.obs;
+  final List<OtRate> rates = overtimePreviewRates;
+  bool _loaded = false;
+
+  String get totalApprovedHours =>
+      '${formatOtNumber(allEntries.where((r) => r.status == OvertimeStatus.approved).fold<double>(0, (total, r) => total + r.hours))}h';
+
+  String get thisMonthHours {
+    final now = _now();
+    final hours = allEntries
+        .where((r) => r.date.year == now.year && r.date.month == now.month)
+        .fold<double>(0, (total, r) => total + r.hours);
+    return '${formatOtNumber(hours)}h';
+  }
+
+  int get pendingCount =>
+      allEntries.where((r) => r.status == OvertimeStatus.pending).length;
+
+  List<OtRequest> get filteredEntries {
     final query = searchQuery.value.trim().toLowerCase();
-    if (query.isEmpty) return allEntries;
-    return allEntries
-        .where((entry) =>
-            entry.date.toLowerCase().contains(query) ||
-            entry.personLabel.toLowerCase().contains(query))
-        .toList();
+    final status = selectedStatus.value;
+    return allEntries.where((r) {
+      if (status != null && r.status != status) return false;
+      return query.isEmpty ||
+          [
+            r.dateLabel,
+            r.date.toIso8601String().split('T').first,
+            r.reason,
+            r.rateLabel,
+            r.approverName ?? '',
+            r.status.label,
+          ].any((value) => value.toLowerCase().contains(query));
+    }).toList()..sort((a, b) {
+      final dateOrder = b.date.compareTo(a.date);
+      return dateOrder == 0 ? b.id.compareTo(a.id) : dateOrder;
+    });
   }
 
   @override
@@ -59,20 +55,33 @@ class OvertimeController extends GetxController {
     fetchEntries();
   }
 
-  /// Loads overtime entries and summary stats. Replace the body with
-  /// a real API / repository call when ready.
+  /// Loads the UI preview once; refresh preserves locally added preview requests.
   Future<void> fetchEntries() async {
     isLoading.value = true;
     try {
-      // TODO: replace with real data source (API, local DB, etc.)
-      allEntries.value = [];
+      if (!_loaded) {
+        allEntries.assignAll(overtimePreviewRequests(_now()));
+        _loaded = true;
+      }
     } finally {
       isLoading.value = false;
     }
   }
 
   void updateSearch(String value) => searchQuery.value = value;
+  void resetFilters() {
+    searchController.clear();
+    searchQuery.value = '';
+    selectedStatus.value = null;
+  }
 
-  /// Adds a newly-submitted overtime request to the top of the list.
-  void addEntry(OvertimeEntry entry) => allEntries.insert(0, entry);
+  void addEntry(OtRequest entry) => allEntries.insert(0, entry);
+  int get nextPreviewId =>
+      allEntries.fold<int>(0, (id, r) => r.id > id ? r.id : id) + 1;
+
+  @override
+  void onClose() {
+    searchController.dispose();
+    super.onClose();
+  }
 }

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:get/get_core/src/get_main.dart';
-import 'package:get/get_instance/src/extension_instance.dart';
-import 'package:get/get_state_manager/src/rx_flutter/rx_obx_widget.dart';
+import 'package:get/get.dart';
+import 'package:test_flutter/common/widgets/app_container.dart';
 import 'package:test_flutter/features/hrms_app/controllers/overtime_controller.dart';
 import 'package:test_flutter/utils/constants/colors.dart';
 
@@ -14,38 +13,50 @@ class OvertimeStatsRow extends StatelessWidget {
     return Obx(
       () => Row(
         children: [
-          Expanded(child: _StatBox(label: 'Total Approved', value: controller.totalApprovedHours.value,)),
+          Expanded(
+            child: _StatBox(
+              label: 'Total approved hours',
+              value: controller.totalApprovedHours,
+            ),
+          ),
           const SizedBox(width: 12),
-          Expanded(child: _StatBox(label: 'This Month', value: controller.thisMonthHours.value)),
+          Expanded(
+            child: _StatBox(
+              label: 'Requested this month',
+              value: controller.thisMonthHours,
+            ),
+          ),
         ],
       ),
     );
   }
 }
+
 class _StatBox extends StatelessWidget {
+  const _StatBox({required this.label, required this.value});
   final String label;
   final String value;
 
-  const _StatBox({required this.label, required this.value});
-
   @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: PColor.primary.withOpacity(0.4)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: TextStyle(fontSize: 13, color: PColor.primary, fontWeight: FontWeight.w600)),
-          const SizedBox(height: 6),
-          Text(value, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: PColor.primary)),
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => AppContainer(
+    padding: const EdgeInsets.all(16),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          value,
+          style: const TextStyle(
+            fontSize: 34,
+            fontWeight: FontWeight.w700,
+            color: PColor.primary,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: const TextStyle(fontSize: 12, color: PColor.textColor),
+        ),
+      ],
+    ),
+  );
 }

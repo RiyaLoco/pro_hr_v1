@@ -1,14 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:get/get_core/src/get_main.dart';
-import 'package:get/get_instance/src/extension_instance.dart';
-import 'package:get/get_state_manager/src/rx_flutter/rx_obx_widget.dart';
+import 'package:get/get.dart';
 import 'package:test_flutter/common/widgets/custom_sliver_appbar.dart';
+import 'package:test_flutter/features/hrms_app/controllers/home_controller.dart';
 import 'package:test_flutter/features/hrms_app/controllers/overtime_request_controller.dart';
 import 'package:test_flutter/features/hrms_app/screens/leave/widgets/leave_form.dart';
 import 'package:test_flutter/utils/constants/colors.dart';
-import 'package:test_flutter/utils/constants/size.dart';
-
-import '../../controllers/home_controller.dart';
 
 class OvertimeRequestScreen extends StatelessWidget {
   const OvertimeRequestScreen({super.key});
@@ -16,8 +12,9 @@ class OvertimeRequestScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final homeController = Get.find<HomeController>();
-    final controller = Get.put(OvertimeRequestController());
-
+    final controller = Get.isRegistered<OvertimeRequestController>()
+        ? Get.find<OvertimeRequestController>()
+        : Get.put(OvertimeRequestController());
     return Scaffold(
       backgroundColor: Colors.grey[100],
       body: CustomScrollView(
@@ -28,79 +25,93 @@ class OvertimeRequestScreen extends StatelessWidget {
             isShowProfile: false,
           ),
           SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16,vertical: 20),
-              child: Obx(
-                () => Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: LeaveFormField(
-                            icon: Icons.calendar_today_outlined,
-                            label: controller.startDateLabel,
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Obx(
+                    () => LeaveFormField(
+                      icon: Icons.calendar_today_outlined,
+                      label: controller.dateLabel,
+                      showDropdownIcon: false,
+                      onTap: () => controller.pickDate(context),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Obx(
+                          () => LeaveFormField(
+                            icon: Icons.login,
+                            label:
+                                controller.startTime.value?.format(context) ??
+                                'Start time',
                             showDropdownIcon: false,
-                            onTap: () => controller.pickStartDate(context),
+                            onTap: () =>
+                                controller.pickTime(context, start: true),
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: LeaveFormField(
-                            icon: Icons.calendar_today_outlined,
-                            label: controller.endDateLabel,
-                            showDropdownIcon: false,
-                            onTap: () => controller.pickEndDate(context),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: Sizes.spaceBtwItems),
-                    LeaveFormField(
-                      icon: Icons.access_time,
-                      label: controller.hoursWorkedLabel,
-                      onTap: () => controller.pickHoursWorked(context),
-                    ),
-                    const SizedBox(height: Sizes.spaceBtwItems),
-                    LeaveFormField(
-                      icon: Icons.hourglass_bottom,
-                      label: controller.overtimeRateLabel,
-                      onTap: () => controller.pickOvertimeRate(context),
-                    ),
-                    const SizedBox(height: Sizes.spaceBtwItems),
-                    LeaveFormField(
-                      icon: Icons.verified_user_outlined,
-                      label: controller.certifyAuthorizeLabel,
-                      onTap: () => controller.pickCertifyAuthorize(context),
-                    ),
-                    const SizedBox(height: Sizes.spaceBtwItems),
-                    LeaveTextAreaField(controller: controller.reasonController),
-                    const SizedBox(height: 32),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: controller.isSubmitting.value ? null : controller.submit,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: PColor.primary,
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                        ),
-                        child: controller.isSubmitting.value
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                              )
-                            : const Text(
-                                'Submit',
-                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15),
-                              ),
                       ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Obx(
+                          () => LeaveFormField(
+                            icon: Icons.logout,
+                            label:
+                                controller.endTime.value?.format(context) ??
+                                'End time',
+                            showDropdownIcon: false,
+                            onTap: () =>
+                                controller.pickTime(context, start: false),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Obx(
+                    () => LeaveFormField(
+                      icon: Icons.payments_outlined,
+                      label:
+                          controller.rate.value?.label ??
+                          'Select overtime rate',
+                      onTap: () => controller.pickRate(context),
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: 16),
+                  LeaveTextAreaField(
+                    controller: controller.reasonController,
+                    hint: 'Reason for overtime',
+                  ),
+                  const SizedBox(height: 16),
+                  Obx(
+                    () => controller.validationError.value == null
+                        ? const SizedBox.shrink()
+                        : Padding(
+                            padding: const EdgeInsets.only(bottom: 16),
+                            child: Text(
+                              controller.validationError.value!,
+                              style: const TextStyle(color: Colors.red),
+                            ),
+                          ),
+                  ),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: PColor.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                      ),
+                      onPressed: () {
+                        if (controller.savePreview()) Get.back();
+                      },
+                      child: const Text('Save preview request'),
+                    ),
+                  ),
+                ],
               ),
             ),
           ),

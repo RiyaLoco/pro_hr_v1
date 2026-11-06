@@ -98,8 +98,10 @@ class _QrScanScreenState extends State<QrScanScreen> {
             left: 24,
             right: 24,
             bottom: bottomInset + 48,
-            child: const Text(
-              'Point the camera at the QR code displayed at your office',
+            child: Text(
+              widget.isCheckIn
+                  ? 'Scan the office QR code. Use this same code to check out.'
+                  : 'Scan the same office QR code you used to check in today.',
               textAlign: TextAlign.center,
               style: TextStyle(color: Colors.white70, fontSize: 14),
             ),

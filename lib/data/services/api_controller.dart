@@ -6,8 +6,13 @@ import 'package:test_flutter/data/models/res/recruitment_models.dart';
 import 'package:test_flutter/data/models/res/schedule_models.dart';
 import 'package:test_flutter/data/models/res/user_models.dart';
 import 'package:test_flutter/data/services/app_url_service.dart';
+import 'package:test_flutter/data/services/attendance_qr_service.dart';
 
 class ApiController {
+  ApiController({AttendanceQrService? attendanceQr})
+    : _attendanceQr = attendanceQr ?? AttendanceQrService();
+
+  final AttendanceQrService _attendanceQr;
   static String? _token;
   static void setToken(String? token) => _token = token;
   final Dio dio =
@@ -226,28 +231,75 @@ class ApiController {
     required int attendanceTypeId,
     required double latitude,
     required double longitude,
-    String? qrCode,
+    required String qrCode,
   }) async {
+    final qr = qrCode.trim();
+    if (qr.isEmpty) throw ApiException('Scan the office QR code first.');
+    final path = AppUrlService.attendanceCheckUrl(
+      attendanceTypeId: attendanceTypeId,
+      latitude: latitude,
+      longitude: longitude,
+    );
+    if (!isCheckIn) {
+      final today = await fetchTodayAttendance();
+      final checkIn = today.checkInRecord;
+      if (checkIn == null || !today.checkedIn) {
+        throw ApiException('Check in before checking out.');
+      }
+      if (today.checkedOut) {
+        throw ApiException('You have already checked out today.');
+      }
+      try {
+        await _attendanceQr.requireMatchingCheckOut(checkIn, qr);
+      } on StateError catch (e) {
+        throw ApiException(e.message);
+      }
+    }
     final response = await dio.post(
-      isCheckIn
-          ? AppUrlService.attendanceCheckIn
-          : AppUrlService.attendanceCheckOut,
-      data: {
-        'attendance_type_id': attendanceTypeId,
-        'latitude': latitude,
-        'longitude': longitude,
-        // The API does not read this yet; sent so the server can validate it later.
-        'qr_code': ?qrCode,
-      },
+      path,
+      // The supplied Laravel check() discards the body. Keep the QR here for
+      // server-side validation once the accompanying backend patch is applied.
+      data: {'qr_code': qr},
     );
 
     final data = response.data;
     final body = data is Map<String, dynamic> ? data : <String, dynamic>{};
 
-    if (response.statusCode == 422 && body['isCheckinRange'] == false) {
-      return PunchResult.fromJson(body);
+    final result = PunchResult.fromJson(body);
+    final code = response.statusCode ?? 0;
+    if ((code == 422 || (code >= 200 && code < 300)) &&
+        result.isInRange == false) {
+      return result;
     }
-    return PunchResult.fromJson(_unwrap(response));
+    _unwrap(response);
+    if (!result.success) {
+      throw ApiException(
+        result.message.isNotEmpty
+            ? 'Attendance was not accepted under the employee work policy. '
+                  '${result.message}'
+            : 'The server did not confirm the employee location policy and '
+                  'an accepted attendance status. Please contact your administrator.',
+        statusCode: code,
+      );
+    }
+    if (isCheckIn && result.success) {
+      final record = result.record;
+      if (record == null) {
+        throw ApiException(
+          'Attendance was recorded, but the server did not return its record. '
+          'Contact your administrator before checking out.',
+        );
+      }
+      try {
+        await _attendanceQr.rememberCheckIn(record, qr);
+      } catch (_) {
+        throw ApiException(
+          'Attendance was recorded, but its QR code could not be saved on this '
+          'device. Contact your administrator before checking out.',
+        );
+      }
+    }
+    return result;
   }
 
   Future<List<WorkSchedule>> fetchSchedules({

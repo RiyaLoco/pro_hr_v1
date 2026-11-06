@@ -2,16 +2,19 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:test_flutter/data/models/res/punch_models.dart';
 import 'package:test_flutter/data/services/api_controller.dart';
 import 'package:test_flutter/data/services/location_service.dart';
 import 'package:test_flutter/features/hrms_app/screens/home/widgets/qr_screen.dart';
 
 /// Today's attendance for the home card.
 ///
-/// Check in:  scan the office QR code, read the GPS position, send both.
-/// Check out: scan the office QR code and send it with the GPS position.
+/// Check in: scan the office QR code and submit the phone's GPS position.
+/// Check out: require the same QR and submit a fresh GPS position.
 /// The server decides whether the position is inside the allowed radius.
 class PunchController extends GetxController {
+  PunchController({ApiController? api}) : _api = api ?? ApiController();
+
   final RxBool isCheckedIn = false.obs;
   final RxBool isCheckedOut = false.obs;
   final RxBool isLoading = false.obs;
@@ -22,7 +25,7 @@ class PunchController extends GetxController {
   final RxString checkOutTime = ''.obs;
   final RxString timeWorking = ''.obs;
 
-  final ApiController _api = ApiController();
+  final ApiController _api;
   final LocationService _location = LocationService();
 
   int? _checkInSeconds;
@@ -133,9 +136,10 @@ class PunchController extends GetxController {
         qrCode: qrCode,
       );
 
+      // Reload verified records after either outcome to clear stale card state.
+      await fetchToday();
       if (result.success) {
-        await fetchToday();
-        Get.snackbar(isCheckIn ? 'Checked in' : 'Checked out', result.message);
+        Get.snackbar(result.outcomeTitle(isCheckIn: isCheckIn), result.message);
       } else {
         Get.snackbar('Outside the allowed area', result.outOfRangeMessage);
       }
@@ -155,18 +159,11 @@ class PunchController extends GetxController {
   /// Reload types for each scan so deleted or changed IDs are not reused.
   Future<int> _typeIdFor(bool isCheckIn) async {
     final types = await _api.fetchAttendanceTypes();
-    final wanted = isCheckIn ? 'in' : 'out';
-    final match = types.where((t) => t.direction == wanted).firstOrNull;
-    // Neutral types can be used at either endpoint; never use the opposite direction.
-    final neutral = types.where((t) => t.direction == null).firstOrNull;
-    final type = match ?? neutral;
-    if (type == null) {
-      throw ApiException(
-        'No valid attendance type is configured for check ${isCheckIn ? 'in' : 'out'}. '
-        'Please contact your administrator.',
-      );
+    try {
+      return PunchType.forDirection(types, isCheckIn: isCheckIn).id;
+    } on StateError catch (e) {
+      throw ApiException(e.message);
     }
-    return type.id;
   }
 
   void _showLocationProblem(LocationException e) {

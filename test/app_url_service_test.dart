@@ -2,6 +2,45 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:test_flutter/data/services/app_url_service.dart';
 
 void main() {
+  test('attendance route encodes GPS coordinates as one path segment', () {
+    final path = AppUrlService.attendanceCheckUrl(
+      attendanceTypeId: 9,
+      latitude: -11.5568,
+      longitude: 104.9285,
+    );
+    expect(Uri.parse(path).pathSegments, [
+      'employee',
+      'attendance',
+      '9',
+      '-11.5568,104.9285',
+    ]);
+    expect(path, isNot(contains('{')));
+  });
+
+  test('attendance route rejects invalid coordinates and type IDs', () {
+    for (final (id, latitude, longitude) in [
+      (0, 11.5, 104.9),
+      (-1, 11.5, 104.9),
+      (1, double.nan, 104.9),
+      (1, double.infinity, 104.9),
+      (1, 91.0, 104.9),
+      (1, -91.0, 104.9),
+      (1, 11.5, double.nan),
+      (1, 11.5, double.negativeInfinity),
+      (1, 11.5, 181.0),
+      (1, 11.5, -181.0),
+    ]) {
+      expect(
+        () => AppUrlService.attendanceCheckUrl(
+          attendanceTypeId: id,
+          latitude: latitude,
+          longitude: longitude,
+        ),
+        throwsArgumentError,
+      );
+    }
+  });
+
   test('attachment storage paths resolve without duplicating storage', () {
     final server = Uri.parse(AppUrlService.baseUrl).origin;
     for (final path in [

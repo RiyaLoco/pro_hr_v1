@@ -8,12 +8,35 @@ class AppUrlService {
   static const String recruitments = '/recruitments';
   static const String attendance = '/employee/attendance';
   static const String attendanceToday = '/employee/attendance/today';
-  static const String attendanceCheckIn = '/employee/attendance/check-in';
-  static const String attendanceCheckOut = '/employee/attendance/check-out';
+  static const String attendanceCheck =
+      '/employee/attendance/{attendance_type_id}/{check_location}';
   static const String attendanceTypes = '/employee/attendance/types';
   static const String schedules = '/employee/schedules';
   static const String shiftOptions = '/employee/shifts';
   static const String shiftRequests = '/employee/shift-requests';
+
+  /// The location is always the phone's GPS position, never QR contents.
+  static String attendanceCheckUrl({
+    required int attendanceTypeId,
+    required double latitude,
+    required double longitude,
+  }) {
+    if (attendanceTypeId <= 0) {
+      throw ArgumentError.value(attendanceTypeId, 'attendanceTypeId');
+    }
+    if (!latitude.isFinite || latitude.abs() > 90) {
+      throw ArgumentError.value(latitude, 'latitude');
+    }
+    if (!longitude.isFinite || longitude.abs() > 180) {
+      throw ArgumentError.value(longitude, 'longitude');
+    }
+    return attendanceCheck
+        .replaceFirst('{attendance_type_id}', '$attendanceTypeId')
+        .replaceFirst(
+          '{check_location}',
+          Uri.encodeComponent('$latitude,$longitude'),
+        );
+  }
 
   /// Resolves Laravel public-disk attachments for the API server in use.
   static String attachmentUrl(String path) {

@@ -28,11 +28,9 @@ class AttendanceCheck extends StatelessWidget {
             hasScrollBody: false,
             child: Stack(
               children: [
-                LocationHelpers(
-                  userLatLong: '11.5568,104.9285',
-                  officeLatLong: '11.5564,104.9282',
-                  allowedRadiusMeters: 100,
-                ),
+                // Branch coordinates and policy radius come from Laravel;
+                // sample coordinates must not claim the user is in range.
+                const LocationHelpers(),
                 Positioned(
                   left: 16,
                   right: 16,

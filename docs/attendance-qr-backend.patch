@@ -1,0 +1,61 @@
+--- a/app/Http/Controllers/API/Employee/EmployeeAttendanceController.php
++++ b/app/Http/Controllers/API/Employee/EmployeeAttendanceController.php
+@@ -223,10 +223,12 @@
+ 
+     public function check(Request $request, string $attendance_type_id, string $check_location): JsonResponse
+     {
++        $qrCode = $request->input('qr_code');
+         $request->query->replace([]);
+         $request->replace([
+             'attendance_type_id' => $attendance_type_id,
+             'check_location' => $check_location,
++            'qr_code' => $qrCode,
+         ]);
+         $input = $request->validate([
+             'attendance_type_id' => ['required', 'integer', 'exists:attendance_types,id'],
+@@ -255,7 +257,9 @@
+             'latitude' => ['required_without:check_location', 'numeric', 'between:-90,90'],
+             'longitude' => ['required_without:check_location', 'numeric', 'between:-180,180'],
+             'check_location' => ['sometimes', 'required', 'string', 'max:100'],
+-        ]);
++            'qr_code' => ['required', 'string', 'max:4096'],
++        ]);
++        $qrHash = hash('sha256', trim($input['qr_code']));
+         $location = isset($input['latitude'], $input['longitude'])
+             ? $input['latitude'].','.$input['longitude']
+             : ($input['check_location'] ?? '');
+@@ -265,7 +269,7 @@
+             throw ValidationException::withMessages(['check_location' => $exception->getMessage()]);
+         }
+ 
+-        return DB::transaction(function () use ($request, $employeeId, $direction, $location, $input) {
++        return DB::transaction(function () use ($request, $employeeId, $direction, $location, $input, $qrHash) {
+             // Serialize all mobile checks for this employee, including first checks.
+             $employee = Employee::query()->lockForUpdate()->find($employeeId);
+             if (! $employee) {
+@@ -284,6 +288,17 @@
+             }
+             if ($direction === 'out' && ! $records->contains(fn ($record) => $this->recordDirection($record) === 'in')) {
+                 return response()->json(['success' => false, 'message' => 'Check in before checking out.'], 409);
++            }
++
++            if ($direction === 'out') {
++                $checkIn = $records->first(fn ($record) => $this->recordDirection($record) === 'in');
++                $expectedQrHash = $checkIn->compared_values['QR Code Hash'] ?? null;
++                if (! is_string($expectedQrHash) || ! hash_equals($expectedQrHash, $qrHash)) {
++                    return response()->json([
++                        'success' => false,
++                        'message' => 'Scan the same QR code you used to check in today.',
++                    ], 422);
++                }
+             }
+ 
+             $radius = $employee->policy?->radius_allowance;
+@@ -358,6 +373,7 @@
+                 'compared_values' => [
+                     'Location Summary' => $locationSummary,
+                     'Check Direction' => $direction,
++                    'QR Code Hash' => $qrHash,
+                     'Work Policy' => $employee->policy->name,
+                     'Check Date' => $date,
+                     'Check Time' => $now->format('H:i:s'),

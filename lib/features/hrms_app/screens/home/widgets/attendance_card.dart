@@ -117,7 +117,6 @@
 //   }
 // }
 
-
 // class _TimeInfo extends StatelessWidget {
 //   final String time;
 //   final String label;
@@ -177,55 +176,77 @@ class AttendanceCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 10),
-          Row(
-            children: [
-              Expanded(
-                child: Obx(
-                  () => Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        home.currentTime.value,
-                        style: TextStyle(
-                          color: PColor.primary,
-                          fontSize: 36,
-                          fontWeight: FontWeight.bold,
-                        ),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final clock = Obx(
+                () => Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      home.currentTime.value,
+                      style: const TextStyle(
+                        color: PColor.primary,
+                        fontSize: 36,
+                        fontWeight: FontWeight.bold,
                       ),
-                      Text(
-                        home.currentDate.value,
-                        style: TextStyle(color: Colors.grey[500], fontSize: 13),
-                      ),
-                      const SizedBox(height: 20),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          _TimeInfo(
-                            time: punch.checkInTime.value.isEmpty
-                                ? '--:--'
-                                : punch.checkInTime.value,
-                            label: 'Check in',
-                          ),
-                          _TimeInfo(
-                            time: punch.checkOutTime.value.isEmpty
-                                ? '--:--'
-                                : punch.checkOutTime.value,
-                            label: 'Check out',
-                          ),
-                          _TimeInfo(
-                            time: punch.timeWorking.value.isEmpty
-                                ? '--:--'
-                                : punch.timeWorking.value,
-                            label: 'Times Working',
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
+                    ),
+                    Text(
+                      home.currentDate.value,
+                      style: TextStyle(color: Colors.grey[500], fontSize: 13),
+                    ),
+                  ],
                 ),
-              ),
-              _PunchButton(controller: punch),
-            ],
+              );
+              final button = _PunchButton(controller: punch);
+              final textScale = MediaQuery.textScalerOf(context).scale(14) / 14;
+
+              if (constraints.maxWidth < 280 * textScale) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    clock,
+                    const SizedBox(height: 16),
+                    Center(child: button),
+                  ],
+                );
+              }
+
+              return Row(
+                children: [
+                  Expanded(child: clock),
+                  const SizedBox(width: 16),
+                  button,
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: 20),
+          Obx(
+            () => Wrap(
+              spacing: 16,
+              runSpacing: 12,
+              alignment: WrapAlignment.spaceBetween,
+              children: [
+                _TimeInfo(
+                  time: punch.checkInTime.value.isEmpty
+                      ? '--:--'
+                      : punch.checkInTime.value,
+                  label: 'Check in',
+                ),
+                _TimeInfo(
+                  time: punch.checkOutTime.value.isEmpty
+                      ? '--:--'
+                      : punch.checkOutTime.value,
+                  label: 'Check out',
+                ),
+                _TimeInfo(
+                  time: punch.timeWorking.value.isEmpty
+                      ? '--:--'
+                      : punch.timeWorking.value,
+                  label: 'Times Working',
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -240,20 +261,25 @@ class _PunchButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final textScale = MediaQuery.textScalerOf(context).scale(12) / 12;
+    final diameter = 84.0 * (textScale < 1 ? 1 : textScale);
+
     return Obx(() {
       final busy = controller.isPunching.value || controller.isLoading.value;
       final done = controller.isCheckedOut.value;
       final checkedIn = controller.isCheckedIn.value;
 
-      final Color base = (checkedIn && !done) ? Colors.redAccent : PColor.primary;
+      final Color base = (checkedIn && !done)
+          ? Colors.redAccent
+          : PColor.primary;
       final double strength = done ? 0.35 : (checkedIn ? 0.7 : 0.6);
 
       return GestureDetector(
         onTap: busy ? null : controller.onButtonTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 300),
-          width: 85,
-          height: 85,
+          width: diameter,
+          height: diameter,
           decoration: BoxDecoration(
             color: base.withValues(alpha: strength),
             shape: BoxShape.circle,
@@ -316,26 +342,29 @@ class _TimeInfo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
+      mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Icon(Icons.access_time, size: 14, color: PColor.primary),
         const SizedBox(width: 4),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              time,
-              style: const TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-                color: PColor.textColor,
+        Flexible(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                time,
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: PColor.textColor,
+                ),
               ),
-            ),
-            Text(
-              label,
-              style: TextStyle(fontSize: 8, color: Colors.grey[500]),
-            ),
-          ],
+              Text(
+                label,
+                style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+              ),
+            ],
+          ),
         ),
       ],
     );

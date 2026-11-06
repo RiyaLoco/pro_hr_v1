@@ -24,21 +24,39 @@ class AttendanceCheck extends StatelessWidget {
             subtitle: homeController.currentDate.value,
             isShowProfile: false,
           ),
-          SliverFillRemaining(
-            hasScrollBody: false,
-            child: Stack(
-              children: [
-                // Branch coordinates and policy radius come from Laravel;
-                // sample coordinates must not claim the user is in range.
-                const LocationHelpers(),
-                Positioned(
-                  left: 16,
-                  right: 16,
-                  bottom: 40,
-                  child: AttendanceCard(),
+          SliverLayoutBuilder(
+            builder: (context, constraints) {
+              final remainingHeight =
+                  constraints.viewportMainAxisExtent -
+                  constraints.precedingScrollExtent;
+
+              return SliverToBoxAdapter(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: remainingHeight > 0 ? remainingHeight : 0,
+                  ),
+                  child: Stack(
+                    alignment: Alignment.bottomCenter,
+                    children: [
+                      // Branch coordinates and policy radius come from Laravel;
+                      // sample coordinates must not claim the user is in range.
+                      const Positioned.fill(child: LocationHelpers()),
+                      SafeArea(
+                        top: false,
+                        minimum: const EdgeInsets.fromLTRB(16, 180, 16, 24),
+                        child: Align(
+                          alignment: Alignment.bottomCenter,
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 720),
+                            child: const AttendanceCard(),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ],
-            ),
+              );
+            },
           ),
         ],
       ),

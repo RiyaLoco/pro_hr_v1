@@ -6,106 +6,142 @@ import 'package:flutter/services.dart';
 import 'package:get/get.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
-class DeviceUtils{
-  static void hideKeyboard(BuildContext context){
-    FocusScope.of(context).requestFocus(FocusNode());
+class DeviceUtils {
+  static const double tabletBreakpoint = 600;
+  static const double desktopBreakpoint = 1024;
+
+  static BuildContext _resolveContext(BuildContext? context) {
+    final resolvedContext = context ?? Get.context;
+    if (resolvedContext == null) {
+      throw FlutterError(
+        'DeviceUtils needs a BuildContext below a MediaQuery. '
+        'Pass the current widget context when reading device dimensions.',
+      );
+    }
+    return resolvedContext;
   }
 
-  static Future<void> setStatusBarColor(Color color) async{
-    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(statusBarColor: color));
+  static void hideKeyboard(BuildContext context) {
+    FocusScope.of(context).unfocus();
   }
 
-  static bool isLandscapeOrientation(BuildContext context){
-    final viewInsets = View.of(context).viewInsets;
-    return viewInsets.bottom == 0;
+  static Future<void> setStatusBarColor(Color color) async {
+    SystemChrome.setSystemUIOverlayStyle(
+      SystemUiOverlayStyle(statusBarColor: color),
+    );
   }
 
-  static bool isPortraitOrientation(BuildContext context){
-    final viewInsets = View.of(context).viewInsets;
-    return viewInsets.bottom != 0;
+  static bool isLandscapeOrientation(BuildContext context) {
+    return MediaQuery.orientationOf(context) == Orientation.landscape;
   }
 
-  static void setFullScreen(bool enable){
-    SystemChrome.setEnabledSystemUIMode(enable ? SystemUiMode.immersiveSticky : SystemUiMode.edgeToEdge);
+  static bool isPortraitOrientation(BuildContext context) {
+    return MediaQuery.orientationOf(context) == Orientation.portrait;
   }
 
-  static double getScreenHeight(){
-    return MediaQuery.of(Get.context!).size.height;
+  static void setFullScreen(bool enable) {
+    SystemChrome.setEnabledSystemUIMode(
+      enable ? SystemUiMode.immersiveSticky : SystemUiMode.edgeToEdge,
+    );
   }
 
-  static double getScreenWidth(BuildContext context){
-    return MediaQuery.of(Get.context!).size.width;
+  static Size getScreenSize([BuildContext? context]) {
+    return MediaQuery.sizeOf(_resolveContext(context));
   }
 
-  static double getPixelRatio(){
-    return MediaQuery.of(Get.context!).devicePixelRatio;
+  static double getScreenHeight([BuildContext? context]) {
+    return getScreenSize(context).height;
   }
 
-  static double getStatusBarHeight(){
-    return MediaQuery.of(Get.context!).padding.top;
+  static double getScreenWidth([BuildContext? context]) {
+    return getScreenSize(context).width;
   }
 
-  static double getBottomNavigationBarHeight(){
+  static bool isMobile(BuildContext context) {
+    return getScreenWidth(context) < tabletBreakpoint;
+  }
+
+  static bool isTablet(BuildContext context) {
+    final width = getScreenWidth(context);
+    return width >= tabletBreakpoint && width < desktopBreakpoint;
+  }
+
+  static bool isDesktop(BuildContext context) {
+    return getScreenWidth(context) >= desktopBreakpoint;
+  }
+
+  static double getPixelRatio([BuildContext? context]) {
+    return MediaQuery.devicePixelRatioOf(_resolveContext(context));
+  }
+
+  static double getStatusBarHeight([BuildContext? context]) {
+    return MediaQuery.paddingOf(_resolveContext(context)).top;
+  }
+
+  static double getBottomNavigationBarHeight() {
     return kBottomNavigationBarHeight;
   }
 
-  static double getAppBarHeight(){
+  static double getAppBarHeight() {
     return kToolbarHeight;
   }
 
-  static double getKeyboardHeight(){
-    final viewInsets = View.of(Get.context!).viewInsets;
-    return viewInsets.bottom;
+  static double getKeyboardHeight([BuildContext? context]) {
+    return MediaQuery.viewInsetsOf(_resolveContext(context)).bottom;
   }
 
-  static Future<bool> isKeyboardVisible()async{
-    final viewInsets = View.of(Get.context!).viewInsets;
-    return viewInsets.bottom > 0;
+  static Future<bool> isKeyboardVisible([BuildContext? context]) async {
+    return getKeyboardHeight(context) > 0;
   }
 
-  static Future<bool> isPhysicalDevice()async{
-    return defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS;
+  static Future<bool> isPhysicalDevice() async {
+    return defaultTargetPlatform == TargetPlatform.android ||
+        defaultTargetPlatform == TargetPlatform.iOS;
   }
 
-  static void vibrated(Duration duration){
+  static void vibrated(Duration duration) {
     HapticFeedback.vibrate();
     Future.delayed(duration, () => HapticFeedback.vibrate());
   }
 
-  static Future<void> setPreferredOrientations(List<DeviceOrientation> orientations) async{
+  static Future<void> setPreferredOrientations(
+    List<DeviceOrientation> orientations,
+  ) async {
     await SystemChrome.setPreferredOrientations(orientations);
   }
 
-  static void hideStatusBar(){
+  static void hideStatusBar() {
     SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: []);
   }
 
-  static void showStatusBar(){
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual, overlays: SystemUiOverlay.values);
+  static void showStatusBar() {
+    SystemChrome.setEnabledSystemUIMode(
+      SystemUiMode.manual,
+      overlays: SystemUiOverlay.values,
+    );
   }
 
-  static Future<bool> hasInternetConnection()async{
-    try{
+  static Future<bool> hasInternetConnection() async {
+    try {
       final result = await InternetAddress.lookup('example.com');
       return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
-    } on SocketException catch(_){
+    } on SocketException catch (_) {
       return false;
     }
-  } 
+  }
 
-  static bool isIos(){
+  static bool isIos() {
     return Platform.isIOS;
   }
 
-  static bool isAndroid(){
+  static bool isAndroid() {
     return Platform.isAndroid;
   }
 
-  static void launchURL(String url) async{
-    if(await canLaunchUrlString(url)){
+  static void launchURL(String url) async {
+    if (await canLaunchUrlString(url)) {
       await launchUrlString(url);
-    }
-    else{
+    } else {
       throw 'Could not launch $url';
     }
   }

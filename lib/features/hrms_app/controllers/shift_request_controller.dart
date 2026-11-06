@@ -7,20 +7,13 @@ import 'package:test_flutter/data/services/api_controller.dart';
 class ShiftRequestController extends GetxController {
   final RxList<ShiftRequestItem> requests = <ShiftRequestItem>[].obs;
   final RxBool isLoading = false.obs;
-
-  /// Null = show all.
   final Rxn<ShiftRequestStatus> filter = Rxn<ShiftRequestStatus>();
-
-  /// Id of the request being cancelled right now (for the button spinner).
   final RxnInt cancellingId = RxnInt();
-
   final ApiController _api = ApiController();
-
   List<ShiftRequestItem> get filteredRequests => filter.value == null
       ? requests.toList()
       : requests.where((r) => r.status == filter.value).toList();
 
-  /// Newest request for a working day, or null. The API returns newest first.
   ShiftRequestItem? requestFor(int scheduleDetailId) =>
       requests.where((r) => r.scheduleDetailId == scheduleDetailId).firstOrNull;
 

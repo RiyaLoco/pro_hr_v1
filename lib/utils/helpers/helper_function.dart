@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:test_flutter/utils/devices/device_utility.dart';
 
 class HelperFunctions {
   static Color? getColor(String value) {
@@ -42,7 +43,7 @@ class HelperFunctions {
   }
 
   /// Gets safe area height based on notch presence
-  static double  getTopSafeArea(BuildContext context) {
+  static double getTopSafeArea(BuildContext context) {
     return MediaQuery.of(context).viewPadding.top;
   }
 
@@ -52,9 +53,9 @@ class HelperFunctions {
   }
 
   static void showSnackBar(String message) {
-    ScaffoldMessenger.of(Get.context!).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
+    ScaffoldMessenger.of(
+      Get.context!,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   static void showAlert(String title, String message) {
@@ -76,10 +77,7 @@ class HelperFunctions {
   }
 
   static void navigateToScreen(BuildContext context, Widget screen) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => screen),
-    );
+    Navigator.push(context, MaterialPageRoute(builder: (_) => screen));
   }
 
   static String truncateText(String text, int maxLength) {
@@ -91,38 +89,29 @@ class HelperFunctions {
   }
 
   static bool isDarkMode(BuildContext context) {
-    return Theme
-        .of(context)
-        .brightness == Brightness.dark;
+    return Theme.of(context).brightness == Brightness.dark;
   }
 
   static bool isPortrait(BuildContext context) {
-    return MediaQuery
-        .of(context)
-        .orientation == Orientation.portrait;
+    return MediaQuery.of(context).orientation == Orientation.portrait;
   }
 
-  static Size screenSize() {
-    return MediaQuery
-        .of(Get.context!)
-        .size;
+  static Size screenSize([BuildContext? context]) {
+    return DeviceUtils.getScreenSize(context);
   }
 
-  static double screenHeight() {
-    return MediaQuery
-        .of(Get.context!)
-        .size
-        .height;
+  static double screenHeight([BuildContext? context]) {
+    return DeviceUtils.getScreenHeight(context);
   }
 
-  static double screenWidth() {
-    return MediaQuery
-        .of(Get.context!)
-        .size
-        .width;
+  static double screenWidth([BuildContext? context]) {
+    return DeviceUtils.getScreenWidth(context);
   }
 
-  static String getFormattedDate(DateTime date, {String format = 'dd MMM yyyy'}) {
+  static String getFormattedDate(
+    DateTime date, {
+    String format = 'dd MMM yyyy',
+  }) {
     return DateFormat(format).format(date);
   }
 
@@ -134,30 +123,30 @@ class HelperFunctions {
     final wrappedList = <Widget>[];
     for (var i = 0; i < widgets.length; i += rowSize) {
       final rowChildren = widgets.sublist(
-          i, i + rowSize > widgets.length ? widgets.length : i + rowSize);
+        i,
+        i + rowSize > widgets.length ? widgets.length : i + rowSize,
+      );
       wrappedList.add(Row(children: rowChildren));
     }
     return wrappedList;
   }
 
-
   static String maskPhoneNumber(String number) {
     if (number.length > 6) {
       final visibleStart = number.substring(0, 2);
       final visibleEnd = number.substring(number.length - 3);
-      final maskedPart = '*' * (number.length - visibleStart.length - visibleEnd.length);
+      final maskedPart =
+          '*' * (number.length - visibleStart.length - visibleEnd.length);
       return '$visibleStart $maskedPart $visibleEnd';
     }
     return number;
   }
-
 
   static String generateReferralCode(String firstName) {
     final random = Random();
     final randomNumber = random.nextInt(1000);
     return firstName.toUpperCase() + randomNumber.toString();
   }
-
 
   /// Converts a dynamic [value] to a [DateTime] object.
   ///
@@ -209,5 +198,4 @@ class HelperFunctions {
 
     return age;
   }
-
 }

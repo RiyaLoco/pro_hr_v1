@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:test_flutter/data/models/attendance_qr_payload.dart';
 import 'package:test_flutter/data/models/res/attendance_history_models.dart';
 import 'package:test_flutter/data/models/res/leave_request_models.dart';
@@ -236,12 +239,13 @@ class ApiController {
   }) async {
     final qr = qrCode.trim();
     if (qr.isEmpty) throw ApiException('Scan the office QR code first.');
+    final AttendanceQrPayload action;
     try {
-      AttendanceQrPayload.parse(qr);
+      action = AttendanceQrPayload.parse(qr);
     } on FormatException catch (e) {
       throw ApiException(e.message);
     }
-    final path = AppUrlService.attendanceCheckUrl(
+    final path = action.resolve(
       attendanceTypeId: attendanceTypeId,
       latitude: latitude,
       longitude: longitude,
@@ -256,22 +260,36 @@ class ApiController {
         throw ApiException('You have already checked out today.');
       }
       try {
-        await _attendanceQr.requireMatchingCheckOut(checkIn, qr);
+        await _attendanceQr.requireCheckInForCheckOut(checkIn);
       } on StateError catch (e) {
         throw ApiException(e.message);
       }
     }
     final response = await dio.post(
       path,
-      // Laravel must validate this office QR and its branch separately from
-      // check_location, which always contains the phone's fresh GPS position.
+      // Keep the scanned action template for server validation. Its parameters
+      // are resolved in the path using the selected type and fresh phone GPS.
       data: {'qr_code': qr},
     );
 
     final data = response.data;
     final body = data is Map<String, dynamic> ? data : <String, dynamic>{};
 
-    final result = PunchResult.fromJson(body);
+    final result = PunchResult.fromJson(
+      body,
+      currentLatitude: latitude,
+      currentLongitude: longitude,
+      expectedBranchId: action.branchId,
+      qrBranchLocation: action.isTemplate
+          ? null
+          : '${action.latitude},${action.longitude}',
+    );
+    if (kDebugMode) {
+      final policy = result.record?.locationPolicy;
+      debugPrint(
+        '[Attendance location] ${jsonEncode({'qr_branch_id': action.branchId, 'matched_branch_id': policy?.branchId, 'phone_gps': '$latitude,$longitude', 'branch_gps': policy?.branchLocation, 'distance_m': result.distanceMeters, 'server_distance_m': policy?.reportedDistanceMeters, 'radius_m': result.radiusMeters, 'in_range': result.isInRange, 'http_status': response.statusCode})}',
+      );
+    }
     final code = response.statusCode ?? 0;
     if ((code == 422 || (code >= 200 && code < 300)) &&
         result.isInRange == false) {

@@ -1,181 +1,154 @@
-# Attendance endpoint and QR matching
+# Attendance QR branch identity and GPS radius
 
-## Scanned action validation
+## What caused the regressions
 
-The office QR contains a resolved attendance URL, for example:
+The same QR text at every branch contains no branch identity:
 
 ```text
-http://192.168.1.11:8000/api/v1/employee/attendance/1/11.547273130564294, 104.90898218012883
+api/v1/employee/attendance/{attendance_type_id}/{check_location}
 ```
 
-The scanner and the API service now reject unrelated text, other servers,
-other routes, invalid type IDs, and invalid coordinates before an attendance
-request. A path beginning with the configured API prefix and an `action=`
-parameter containing that URL are also supported. Resolve the placeholders
-when generating the QR; literal `{attendance_type_id}` and `{check_location}`
-are not valid scanned values.
+It tells the app which action to execute, but cannot identify the office where
+the QR was printed. The API previously chose the nearest permitted office.
+Consequently, a QR printed at a distant office could be evaluated against a
+different office a few kilometers away.
 
-The QR's coordinates identify the office location represented by the QR.
-They must never be submitted as the employee's current GPS position. The app
-continues to choose the check-in/out type from `/attendance/types` for the
-selected action, so the same office QR can be used for both directions even
-when its URL contains type `1`.
+The Flutter changes also incorrectly restricted check-in to the primary office
+and required optional coordinate metadata on historical records. Those
+restrictions have been removed. Both check-in and check-out can use branches
+in `employee.branch_id` and `employee.allow_branch`, subject to the GPS radius.
 
-For example, scanning the URL above from phone GPS `11.5,104.9` with selected
-type `3` submits `/api/v1/employee/attendance/3/11.5,104.9` and includes the
-original scanned URL in `qr_code`. The app does not open the scanned URL as a
-GET request or send credentials to a server supplied by the QR.
+## Generate a different QR for each branch
 
-**Action validation alone is not office authorization.** The backend patch
-below now binds the QR's coordinates to a branch in the employee's primary
-branch or `allow_branch`, using the trusted `Branch.location` from the database.
-Coordinates that do not match a permitted branch are rejected before creating
-an attendance row. A tolerance of `0.000001` degrees compensates for decimal
-rounding of branch coordinates; it does not define the phone's GPS allowance.
+Keep both runtime placeholders and add the branch's actual ID:
 
-Phone GPS is then compared with that QR branch using the employee's policy
-radius. For example, a phone at permitted branch B cannot use branch A's QR
-when it is outside A's radius. A copy of the same static office URL represents
-the same QR; authenticating an issuer or rotating codes would require a signed
-or registered token format beyond the current URL.
+```text
+api/v1/employee/attendance/{attendance_type_id}/{check_location}?branch_id=1
+api/v1/employee/attendance/{attendance_type_id}/{check_location}?branch_id=2
+```
 
-The Laravel project is not available locally. The replacement source and patch
-are prepared in this Flutter repository and must be installed in Laravel to
-change live server behavior. Old check-ins made without a stored QR hash need
-administrator handling rather than bypassing QR validation at check-out.
+Laravel generates this text using the current branch record:
 
-The Flutter app now sends:
+```php
+$qrText = \App\Support\AttendanceQr::forBranch(
+    (int) $branch->id,
+    rtrim((string) config('app.url'), '/').'/api/v1',
+);
+```
+
+The running Laravel project was located at:
+
+```text
+/Applications/XAMPP/xamppfiles/htdocs/INFINITE-OS
+```
+
+Its branch details and printable QR views now generate branch-specific QR text
+directly from their branch records. The details view also uses `$record`, the
+variable its controller supplies, instead of the undefined `$previewInfo`.
+Existing stored branch rows do not need a migration. Previously printed QR
+codes must be reprinted from the updated branch page to include branch identity.
+
+The unscoped legacy template remains supported for compatibility. It selects
+the nearest permitted office and cannot establish which branch a printed copy
+belongs to. It cannot enforce scanning branch B while standing at branch A.
+
+## Request and server validation
+
+Flutter fills `attendance_type_id` from the selected API attendance type and
+`check_location` from a fresh phone GPS fix for every scan. Branch coordinates
+never replace phone GPS. The existing authenticated POST route is unchanged:
 
 ```http
-POST /api/v1/employee/attendance/{attendance_type_id}/{latitude,longitude}
+POST /api/v1/employee/attendance/1/11.54732899907136%2C104.9089653152003
 Authorization: Bearer <token>
 Content-Type: application/json
 
-{"qr_code":"<scanned office QR contents>"}
+{"qr_code":"api/v1/employee/attendance/{attendance_type_id}/{check_location}?branch_id=1"}
 ```
 
-The coordinates are the phone's fresh GPS position. The comma is URL encoded.
-Laravel selects check-in or check-out using the attendance type's name, then its
-`short_name`. Configure one type for `Check In`/`IN` and one for `Check Out`/`OUT`.
-Neutral types such as `bcbv`/`vg` cannot select a direction with this controller.
+Laravel parses `branch_id` from `qr_code`, checks employee branch permissions,
+loads that branch's stored coordinates, and evaluates:
 
-Ensure this **POST** route exists in the authenticated employee API group,
-using the group's existing prefix:
-
-```php
-Route::post('attendance/{attendance_type_id}/{check_location}', [EmployeeAttendanceController::class, 'check']);
+```text
+distanceMeters(branch.latitude, branch.longitude, phone.latitude, phone.longitude)
+    <= employee.policy.radius_allowance
 ```
 
-The app saves the accepted check-in QR on this device, keyed by API server,
-employee ID, and attendance record ID. Scan-out requires that exact QR and a
-fresh server location check. A failed location check never saves the QR.
-Pending attendance counts as accepted, as in the supplied controller.
+Distances and policy radii are meters. Comparisons use unrounded Haversine
+distance; display formatting alone converts meters to kilometers. A nearby
+permitted branch cannot authorize a QR that identifies a different branch.
+An outside-radius attempt can be saved as `Failed`, returns HTTP 422 and
+`success: false`, and does not complete attendance. Work schedule allowances
+still decide whether an in-range attempt is successful or pending approval.
 
-## Employee work policy and location failures
+The API still requires check-in before check-out and allows one accepted event
+of each direction per day. Check-out may scan a different valid branch QR after
+travelling to another permitted office. The obsolete same-QR-hash restriction
+has been removed; event hashes remain available for audit.
 
-The patched API checks the employee's `policy.radius_allowance` in meters
-against the permitted branch identified by the scanned QR. Being far from the
-primary branch is allowed when the QR belongs to a permitted secondary branch
-and the phone is inside that secondary branch's radius.
-The app reads that branch's distance from `accuracy_meter` or `Matched Branch`,
-and the allowance from `policyRadius` or the saved `compared_values`. It never
-uses a fixed radius for attendance acceptance.
+## Flutter response handling
 
-The supplied Laravel controller defines these outcomes for both directions:
+Both directions use `data.compared_values['Matched Branch']`, rather than
+substituting `primaryLocation` or `WithPrimary`. For an identified branch QR,
+the returned matched branch ID must equal the scanned branch ID. If the server
+returns another branch, its distance is not displayed as the scanned branch's
+distance.
 
-| Location | Employee time allowance | Outcome |
-| --- | --- | --- |
-| Outside the scanned QR branch radius | Any | Failed, HTTP 422 |
-| Inside a permitted radius | Within the check-in/out time allowance | Success |
-| Inside a permitted radius | Late check-in or early check-out beyond the allowance | Pending approval |
-| Missing radius policy or expected work schedule | Any | Configuration error, HTTP 422 |
+When coordinates are available, Flutter recomputes distance against the exact
+GPS submitted for the scan. Identified QR responses must include their matched
+branch coordinates. Legacy unscoped responses can use the server's validated
+distance and radius when optional coordinates are absent. Accepted historical
+records are not rejected solely because optional coordinate metadata is missing.
+Explicit administrator approvals retain their previous behavior.
 
-For flexible schedules, Laravel uses today's dated schedule with the policy
-start/end times as its fallback. Server time determines lateness and early
-departure. A pending response is displayed as **Pending approval**. Time
-allowances and a matching QR never override a failed radius check.
+Existing fixed-coordinate QR URLs remain supported. Their office coordinates
+constrain the target office; the phone still sends its own fresh GPS. A fixed
+QR's office cannot be silently replaced by a nearer primary office.
 
-The app rejects contradictory success responses whose returned distance exceeds
-the allowance, and does not accept a scan without location confirmation and an
-accepted attendance status. Today’s card also checks each record's saved
-location policy before using the `checked_in` / `checked_out` flags. Failed
-attempts cannot complete attendance or hide the retry button.
-Records explicitly changed to `Success(Via Approval)` still count in today's
-attendance, as they do in Laravel; their original location snapshot describes
-the earlier attempt. That approval never authorizes a new scan outside the
-current radius.
+Debug builds emit `[Attendance GPS]` and `[Attendance location]` lines with the
+actual GPS fix, accuracy, timestamp, scanned branch ID, matched branch ID,
+branch coordinates, calculated distance, server distance and radius. These
+diagnostics do not include authorization tokens or complete API responses.
 
-The reported example (`5591.497` meters from the office with a `150` meter
-allowance) is correctly rejected by Laravel: `success: false`,
-`isCheckinRange: false`, and `data.status: Failed`. The returned `data` row is a
-logged failed attempt, not a successful check-in. The app displays approximately
-`5.59 km` against the allowed `150 m`, without changing attendance state. This
-response is covered by a regression test for both HTTP 422 and HTTP 200.
+## Changed backend files
 
-If the actual API still stores `Success` for a distance greater than the saved
-radius, the deployed Laravel code or its location calculation differs from the
-supplied controller and must also be corrected. Check the response's
-`compared_values` for `Work Policy`, `Matched Branch`, `Radius Allowance(M)`,
-and `Location Summary`. The Flutter app cannot undo an accepted server record.
+The changes have been applied to the running Laravel project, with original
+files backed up under `/private/tmp/attendance-backend-backup-*`:
 
-## Required Laravel change
+- `app/Support/AttendanceQr.php`: branch-aware parser and QR text generator.
+- `app/Helpers/Qr/AttendanceQr.php`: compatibility wrapper with the correct namespace.
+- `app/Http/Controllers/API/Employee/EmployeeAttendanceController.php`: branch ID,
+  permission and GPS validation; cross-branch check-out.
+- `resources/views/coreHR/branch/show.blade.php`: generate the current branch QR.
+- `resources/views/print/branchQr.blade.php`: print the identified branch QR.
+- `tests/Feature/EmployeeAttendanceApiTest.php`: real Laravel HTTP regressions
+  with SQLite and cache isolated in memory.
+- `tests/attendance_check_in_policy_test.php`: compatibility command for those
+  real Laravel tests, replacing obsolete framework substitutes.
 
-The pasted controller's `check()` replaces all request input, discarding
-`qr_code`. Its old branch loop also ignores the QR location. Apply
-[attendance-qr-backend.patch](attendance-qr-backend.patch) in the Laravel project;
-it targets the exact controller you supplied:
+Copies are in `docs/backend`. The original-controller patch is
+`docs/attendance-qr-backend.patch`. The snapshot patch applied to the discovered
+Laravel project is `docs/attendance-running-backend.patch`; do not apply it again
+to the already updated project.
+
+## Verification
+
+From the Flutter repository:
 
 ```sh
-git apply --check /path/to/pro_hr_app/docs/attendance-qr-backend.patch
-git apply /path/to/pro_hr_app/docs/attendance-qr-backend.patch
+flutter test --no-pub test/attendance_api_test.dart test/attendance_qr_payload_test.dart test/distant_helpers_test.dart test/app_url_service_test.dart test/attendance_responsive_test.dart
 ```
 
-The patch updates the controller and adds `app/Support/AttendanceQr.php`.
-Alternatively, copy these replacement files into the matching Laravel paths:
-
-- [EmployeeAttendanceController.php](backend/app/Http/Controllers/API/Employee/EmployeeAttendanceController.php)
-- [AttendanceQr.php](backend/app/Support/AttendanceQr.php)
-
-Configure Laravel's `.env` so `APP_URL` is the same server origin used by the QR
-and Flutter, including the port. For the supplied QR:
-
-```dotenv
-APP_URL=http://192.168.1.11:8000
-```
-
-Then rebuild Laravel configuration using `php artisan config:cache`. The
-parser expects the `/api/v1` prefix from this application. The stored
-`Branch.location` must match the office coordinates encoded in its QR. The
-QR's attendance type must exist and identify an IN or OUT type; the requested
-attendance type still determines the actual check-in/out action.
-
-The patch preserves and requires `qr_code`, validates its origin, route, type,
-and coordinates, binds it to a permitted branch, and saves its SHA-256 hash,
-branch ID, and location in `compared_values`. Check-out compares the hash with
-today's accepted check-in inside the employee transaction. A matching QR never
-skips the fresh GPS radius check. No migration is needed. Existing work schedule,
-late/early allowance, failed-attempt logging, and approval behavior still run.
-
-This must be installed to enforce QR checks for requests outside this app.
-Check-ins recorded before the patch have no QR hash and need administrator
-handling for check-out. Without local QR data, the app directs users to the
-device they checked in with or their administrator.
-
-The prepared PHP controller regression harness can be run from this repository:
+From the Laravel project:
 
 ```sh
-php docs/backend/tests/attendance_qr_test.php
+php vendor/bin/phpunit --do-not-cache-result tests/Feature/EmployeeAttendanceApiTest.php
 ```
 
-It executes the replacement controller using in-memory substitutes for Laravel,
-Carbon, the database, and the distance helper. Its 13 scenarios cover invalid QR
-codes, unknown types, unauthorized offices, GPS at a different permitted branch,
-allowed secondary offices, and check-out matching/radius checks. It does not
-verify Laravel routing, authentication, actual model casts, locking, or the live
-distance helper. Run the Laravel project's tests after installing the patch.
-
-Verify on a real device: scan in and out with the same QR inside the allowed
-radius; scan A's QR while standing at another permitted office B; try a QR with
-unrelated coordinates; try another QR for scan-out; try both directions outside
-the radius; and restart the app between scans. Automated Flutter tests use simulated API
-responses and storage; they do not verify live GPS, camera, or Laravel setup.
+The HTTP regressions cover valid secondary-office check-in, a branch 200.15 km
+away while the primary is 5 km away, a nearby third office that must not authorize
+that distant QR, different branch QRs at IN and OUT, unpermitted offices,
+authentication and radius precision. Tests use an isolated SQLite database and
+do not create real attendance records. Actual camera/GPS scanning requires the
+updated app and freshly generated branch QR. Incorrect old `Success` records
+are preserved for administrator review and can still trigger duplicate guards.

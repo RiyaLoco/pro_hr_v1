@@ -2,9 +2,9 @@ import 'package:get_storage/get_storage.dart';
 import 'package:test_flutter/data/models/res/punch_models.dart';
 import 'package:test_flutter/data/services/app_url_service.dart';
 
-/// Keeps the QR for the latest accepted check-in per employee on this device.
-/// The attendance ID prevents yesterday's QR from authorizing today's check-out.
-/// Laravel must enforce this too for checks made on other devices or clients.
+/// Keeps the latest accepted check-in per employee on this device.
+/// Check-out may scan a different valid attendance QR at another permitted
+/// branch. The server evaluates that scan using fresh GPS and employee policy.
 class AttendanceQrService {
   AttendanceQrService({GetStorage? storage}) : _storage = storage;
 
@@ -37,10 +37,7 @@ class AttendanceQrService {
     await storage.write(key, {'attendance_id': record.id, 'qr_code': qr});
   }
 
-  Future<void> requireMatchingCheckOut(
-    PunchRecord checkIn,
-    String qrCode,
-  ) async {
+  Future<void> requireCheckInForCheckOut(PunchRecord checkIn) async {
     final key = _key(checkIn);
     final storage = await _open();
     final saved = storage.read<dynamic>(key);
@@ -49,12 +46,9 @@ class AttendanceQrService {
         saved['qr_code'] is! String ||
         (saved['qr_code'] as String).isEmpty) {
       throw StateError(
-        'The check-in QR code is unavailable on this device. '
+        'The check-in record is unavailable on this device. '
         'Use the device you checked in with or contact your administrator.',
       );
-    }
-    if (saved['qr_code'] != qrCode.trim()) {
-      throw StateError('Scan the same QR code you used to check in today.');
     }
   }
 }

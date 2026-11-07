@@ -1,14 +1,17 @@
 import 'package:test_flutter/data/services/app_url_service.dart';
 
-/// The office URL carried by an attendance QR, not the phone's GPS position.
-/// Parsing checks the action's shape and origin. Laravel must bind these
-/// coordinates to a permitted branch and check the phone GPS against it.
+/// An attendance action whose parameters are filled from the selected type and
+/// fresh phone GPS. Resolved office URLs remain supported for existing QRs.
 class AttendanceQrPayload {
-  final int attendanceTypeId;
-  final double latitude;
-  final double longitude;
+  final int? branchId;
+  final int? attendanceTypeId;
+  final double? latitude;
+  final double? longitude;
+
+  bool get isTemplate => attendanceTypeId == null;
 
   const AttendanceQrPayload._({
+    required this.branchId,
     required this.attendanceTypeId,
     required this.latitude,
     required this.longitude,
@@ -30,8 +33,6 @@ class AttendanceQrPayload {
     final uri = Uri.tryParse(action);
     final api = Uri.parse(AppUrlService.baseUrl);
     if (uri == null ||
-        !uri.path.startsWith('/') ||
-        uri.hasQuery ||
         uri.hasFragment ||
         uri.userInfo.isNotEmpty ||
         ((uri.hasScheme || uri.hasAuthority) &&
@@ -41,6 +42,21 @@ class AttendanceQrPayload {
       throw const FormatException(
         'This QR code is not for this attendance service. Scan the office QR code.',
       );
+    }
+
+    int? branchId;
+    if (uri.hasQuery) {
+      final parameters = uri.queryParametersAll;
+      final values = parameters['branch_id'];
+      final value = values?.singleOrNull;
+      branchId = value != null && RegExp(r'^[1-9][0-9]*$').hasMatch(value)
+          ? int.tryParse(value)
+          : null;
+      if (parameters.length != 1 || branchId == null || branchId <= 0) {
+        throw const FormatException(
+          'The attendance QR has an invalid branch ID.',
+        );
+      }
     }
 
     final prefix = [
@@ -54,6 +70,16 @@ class AttendanceQrPayload {
         ).any((index) => segments[index] != prefix[index])) {
       throw const FormatException(
         'This QR code is not an attendance action. Scan the office QR code.',
+      );
+    }
+
+    if (segments[prefix.length] == '{attendance_type_id}' &&
+        segments.last == '{check_location}') {
+      return AttendanceQrPayload._(
+        branchId: branchId,
+        attendanceTypeId: null,
+        latitude: null,
+        longitude: null,
       );
     }
 
@@ -74,12 +100,26 @@ class AttendanceQrPayload {
         !longitude.isFinite ||
         longitude.abs() > 180) {
       throw const FormatException(
-        'The attendance QR code has an invalid type or office location.',
+        'The attendance QR action has invalid parameters.',
       );
     }
 
     return AttendanceQrPayload._(
+      branchId: branchId,
       attendanceTypeId: type,
+      latitude: latitude,
+      longitude: longitude,
+    );
+  }
+
+  /// Runtime values are validated and encoded before sending the API request.
+  String resolve({
+    required int attendanceTypeId,
+    required double latitude,
+    required double longitude,
+  }) {
+    return AppUrlService.attendanceCheckUrl(
+      attendanceTypeId: attendanceTypeId,
       latitude: latitude,
       longitude: longitude,
     );

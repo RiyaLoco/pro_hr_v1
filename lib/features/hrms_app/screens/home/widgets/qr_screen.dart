@@ -126,8 +126,8 @@ class _QrScanScreenState extends State<QrScanScreen> {
                 ],
                 Text(
                   widget.isCheckIn
-                      ? 'Scan the office QR code. Use this same code to check out.'
-                      : 'Scan the same office QR code you used to check in today.',
+                      ? 'Scan the attendance QR code at your branch.'
+                      : 'Scan the attendance QR code at your current branch to check out.',
                   textAlign: TextAlign.center,
                   style: const TextStyle(color: Colors.white70, fontSize: 14),
                 ),

@@ -8,6 +8,8 @@ import 'package:test_flutter/data/services/attendance_qr_service.dart';
 import 'package:test_flutter/features/hrms_app/controllers/punch_countroller.dart';
 
 const _officeQr =
+    'api/v1/employee/attendance/{attendance_type_id}/{check_location}';
+const _fixedOfficeQr =
     '${AppUrlService.baseUrl}/employee/attendance/1/'
     '11.547273130564294, 104.90898218012883';
 
@@ -31,6 +33,8 @@ Map<String, dynamic> _record({
   String status = 'Success',
   double distance = 25,
   double radius = 100,
+  String? branchLocation = '11.5002248304015,104.9',
+  String? phoneLocation = '11.5,104.9',
 }) => {
   'id': id,
   'employee_id': employee,
@@ -38,14 +42,21 @@ Map<String, dynamic> _record({
   'time': isCheckIn ? '08:00:00' : '17:00:00',
   'status': status,
   'accuracy_meter': distance,
+  'check_location': ?phoneLocation,
   'compared_values': {
     'Check Direction': isCheckIn ? 'in' : 'out',
+    'Default Location': ?branchLocation,
     'Location Summary': {
       'policyRadius': radius,
       'isCheckinRange': distance <= radius,
     },
     'Radius Allowance(M)': radius,
-    'Matched Branch': {'distance': distance},
+    'Matched Branch': {
+      'id': 1,
+      'name': 'Branch A',
+      'distance': distance,
+      'location': ?branchLocation,
+    },
   },
   'type': {
     'id': isCheckIn ? 3 : 9,
@@ -57,15 +68,20 @@ Map<String, dynamic> _result({
   bool isCheckIn = true,
   bool inRange = true,
   String status = 'Success',
+  String branchLocation = '11.5002248304015,104.9',
+  String phoneLocation = '11.5,104.9',
 }) => {
   'success': inRange,
   'isCheckinRange': inRange,
   'policyRadius': 100,
+  'primaryLocation': branchLocation,
   'message': inRange ? 'Attendance recorded.' : 'Outside the permitted radius.',
   'data': _record(
     isCheckIn: isCheckIn,
     status: inRange ? status : 'Failed',
     distance: inRange ? 25 : 250,
+    branchLocation: branchLocation,
+    phoneLocation: phoneLocation,
   ),
 };
 
@@ -122,7 +138,7 @@ void main() {
   );
 
   test(
-    'both directions use the new route and fresh phone coordinates',
+    'one action template resolves both directions with fresh phone coordinates',
     () async {
       ApiController.setToken('attendance-token');
       await punch(qr: '  $_officeQr  ');
@@ -136,7 +152,11 @@ void main() {
       expect(checkIn.headers['Authorization'], 'Bearer attendance-token');
       expect(checkIn.queryParameters, isEmpty);
 
-      responseData = _result(isCheckIn: false);
+      responseData = _result(
+        isCheckIn: false,
+        branchLocation: '11.6002248304015,104.8',
+        phoneLocation: '11.6,104.8',
+      );
       final result = await punch(
         isCheckIn: false,
         latitude: 11.6,
@@ -153,24 +173,49 @@ void main() {
     },
   );
 
-  test('different QR blocks check-out before an attendance POST', () async {
-    await punch();
-    requests.clear();
-    await expectLater(
-      punch(
+  test(
+    'check-out at another branch can scan a different valid attendance QR',
+    () async {
+      await punch();
+      requests.clear();
+      responseData = _result(
+        isCheckIn: false,
+        branchLocation: '12,105',
+        phoneLocation: '12,105',
+      );
+      const branchBQr = '${AppUrlService.baseUrl}/employee/attendance/1/12,105';
+      final result = await punch(
+        isCheckIn: false,
+        qr: branchBQr,
+        latitude: 12,
+        longitude: 105,
+      );
+      expect(result.success, isTrue);
+      expect(requests.map((r) => r.method), ['GET', 'POST']);
+      expect(
+        Uri.decodeComponent(requests.last.uri.path),
+        '/api/v1/employee/attendance/9/12.0,105.0',
+      );
+      expect(requests.last.data, {'qr_code': branchBQr});
+    },
+  );
+
+  test(
+    'a different branch QR still cannot override rejected check-out GPS',
+    () async {
+      await punch();
+      responseData = _result(isCheckIn: false, inRange: false);
+      final result = await punch(
         isCheckIn: false,
         qr: '${AppUrlService.baseUrl}/employee/attendance/1/12,105',
-      ),
-      throwsA(
-        isA<ApiException>().having(
-          (e) => e.message,
-          'message',
-          contains('same QR code'),
-        ),
-      ),
-    );
-    expect(requests.map((r) => r.method), ['GET']);
-  });
+        latitude: 0,
+        longitude: 0,
+      );
+      expect(result.success, isFalse);
+      expect(result.isInRange, isFalse);
+      expect(result.status, 'Failed');
+    },
+  );
 
   test('QR is required before any network request', () async {
     for (final isCheckIn in [true, false]) {
@@ -221,7 +266,7 @@ void main() {
     await punch();
     await AttendanceQrService(
       storage: storage,
-    ).requireMatchingCheckOut(PunchRecord.fromJson(_record()), _officeQr);
+    ).requireCheckInForCheckOut(PunchRecord.fromJson(_record()));
   });
 
   test('another day or employee cannot reuse the saved QR', () async {
@@ -243,6 +288,156 @@ void main() {
     expect(result.radiusMeters, 100);
     expect(storage.values, isEmpty);
   });
+
+  test(
+    'current GPS must be inside the actual branch coordinate radius',
+    () async {
+      // The API incorrectly reports a short distance and even echoes office GPS.
+      // Neither may replace the phone position submitted for this scan.
+      final record = _record(distance: 0);
+      record['check_location'] = '11.547273130564294,104.90898218012883';
+      final compared = record['compared_values'] as Map;
+      compared['Default Location'] = record['check_location'];
+      compared['Matched Branch'] = {
+        'id': 1,
+        'location': record['check_location'],
+        'distance': 0,
+      };
+      responseData = {
+        ..._result(),
+        'primaryLocation': record['check_location'],
+        'WithPrimary': 0,
+        'data': record,
+      };
+      final result = await punch(latitude: 11.540200, longitude: 104.85816);
+      expect(result.success, isFalse);
+      expect(result.distanceMeters, greaterThan(5500));
+      expect(storage.values, isEmpty);
+    },
+  );
+
+  test(
+    'refresh recalculates distance from stored branch and punch coordinates',
+    () async {
+      final record = _record(distance: 0);
+      record['check_location'] = '11.540200,104.85816';
+      (record['compared_values'] as Map)['Default Location'] =
+          '11.547273130564294,104.90898218012883';
+      today['data'] = [record];
+      final controller = PunchController(api: api);
+      await controller.fetchToday();
+      expect(controller.isCheckedIn.value, isFalse);
+      expect(controller.checkInTime.value, isEmpty);
+    },
+  );
+
+  test(
+    'different coordinates pass only within the configured radius',
+    () async {
+      for (final (latitude, longitude, radius, accepted) in [
+        (11.547273130564294, 104.90898218012883, 0.0, true),
+        (11.54732899907136, 104.9089653152003, 10.0, true),
+        (11.54732899907136, 104.9089653152003, 5.0, false),
+        (11.540200, 104.85816, 150.0, false),
+      ]) {
+        final record = _record(
+          distance: 0,
+          radius: radius,
+          branchLocation: '11.547273130564294,104.90898218012883',
+          phoneLocation: '$latitude,$longitude',
+        );
+        responseData = {
+          ..._result(),
+          'policyRadius': radius,
+          'primaryLocation': '11.547273130564294,104.90898218012883',
+          'data': record,
+        };
+        final result = await punch(latitude: latitude, longitude: longitude);
+        expect(result.success, accepted, reason: 'radius: $radius');
+        expect(result.distanceMeters! <= radius, accepted);
+      }
+    },
+  );
+
+  test(
+    'branch-specific scans reject missing or invalid branch coordinates',
+    () async {
+      for (final location in [null, '', 'NaN,104.9', '91,104.9', '11.5']) {
+        final record = _record(distance: 0, branchLocation: null);
+        responseData = {
+          ..._result(),
+          'primaryLocation': location,
+          'data': record,
+        };
+        final result = await punch(qr: '$_officeQr?branch_id=1');
+        expect(result.success, isFalse, reason: '$location');
+        expect(result.record?.accepted, isFalse);
+      }
+      expect(storage.values, isEmpty);
+    },
+  );
+
+  test(
+    'today preserves accepted legacy records without coordinate metadata',
+    () async {
+      today['data'] = [_record(branchLocation: null, phoneLocation: null)];
+      final attendance = await api.fetchTodayAttendance();
+      expect(attendance.checkedIn, isTrue);
+      expect(attendance.checkInRecord, isNotNull);
+    },
+  );
+
+  test('check-out compares GPS with the matched branch coordinates', () async {
+    await punch();
+    final record = _record(
+      isCheckIn: false,
+      distance: 0,
+      branchLocation: '11.547273130564294,104.90898218012883',
+      phoneLocation: '11.540200,104.85816',
+    );
+    responseData = {
+      ..._result(isCheckIn: false),
+      'primaryLocation': '11.540200,104.85816',
+      'WithPrimary': 0,
+      'data': record,
+    };
+    final result = await punch(
+      isCheckIn: false,
+      latitude: 11.540200,
+      longitude: 104.85816,
+    );
+    expect(result.success, isFalse);
+    expect(result.distanceMeters, greaterThan(5500));
+  });
+
+  test(
+    'branch-specific check-out needs its matched branch coordinates',
+    () async {
+      await punch();
+      final record = _record(isCheckIn: false, branchLocation: null);
+      responseData = {..._result(isCheckIn: false), 'data': record};
+      expect(
+        (await punch(isCheckIn: false, qr: '$_officeQr?branch_id=1')).success,
+        isFalse,
+      );
+    },
+  );
+
+  test(
+    'a rounded distance cannot move an outside point into the radius',
+    () async {
+      final record = _record(
+        distance: 100,
+        radius: 100,
+        branchLocation: '0,0',
+        phoneLocation: '0.000899325203212,0',
+      );
+      responseData = {..._result(), 'primaryLocation': '0,0', 'data': record};
+      final result = await punch(latitude: 0.000899325203212, longitude: 0);
+      expect(result.success, isFalse);
+      expect(result.distanceMeters, closeTo(100.0004, 0.000001));
+    },
+  );
 
   test('the same QR cannot bypass the server check-out radius', () async {
     await punch();
@@ -272,16 +467,25 @@ void main() {
           responseData = _result();
           await punch();
         }
-        final record = _record(isCheckIn: isCheckIn, distance: 250);
+        final record = _record(
+          isCheckIn: isCheckIn,
+          distance: 250,
+          branchLocation: '11.5022483040148,104.9',
+          phoneLocation: '11.5,104.9',
+        );
         (record['compared_values'] as Map)['Location Summary'] = {
           'policyRadius': 100,
           'isCheckinRange': true,
         };
-        responseData = {..._result(isCheckIn: isCheckIn), 'data': record};
+        responseData = {
+          ..._result(isCheckIn: isCheckIn),
+          'primaryLocation': '11.5022483040148,104.9',
+          'data': record,
+        };
         final result = await punch(isCheckIn: isCheckIn);
         expect(result.success, isFalse);
         expect(result.isInRange, isFalse);
-        expect(result.distanceMeters, 250);
+        expect(result.distanceMeters, closeTo(250, 0.001));
         expect(result.radiusMeters, 100);
         expect(result.outOfRangeMessage, contains('250 m'));
       }
@@ -300,18 +504,150 @@ void main() {
         'success': true,
         'isCheckinRange': true,
         'policyRadius': radius,
-        'data': _record(distance: distance, radius: radius),
+        'data': _record(
+          distance: distance,
+          radius: radius,
+          branchLocation: null,
+          phoneLocation: null,
+        ),
       });
       expect(result.success, accepted);
     }
   });
 
-  test('an allowed secondary branch uses its nearest distance', () async {
-    responseData = {..._result(), 'WithPrimary': 5000};
-    final result = await punch();
+  test('check-out can use an allowed secondary branch', () async {
+    await punch();
+    responseData = {
+      ..._result(isCheckIn: false),
+      'primaryLocation': '11.54496608029594,104.9',
+      'WithPrimary': 5000,
+    };
+    final result = await punch(isCheckIn: false);
     expect(result.success, isTrue);
-    expect(result.distanceMeters, 25);
+    expect(result.distanceMeters, closeTo(25, 0.001));
   });
+
+  test(
+    'check-in at the matched allowed branch ignores a distant primary office',
+    () async {
+      final record = _record();
+      final compared = record['compared_values'] as Map;
+      compared['Default Location'] = '0,1.8';
+      (compared['Matched Branch'] as Map)['id'] = 12;
+      (compared['Location Summary'] as Map)['WithPrimary'] = 200000;
+      responseData = {
+        ..._result(),
+        'primaryLocation': '0,1.8',
+        'WithPrimary': 200000,
+        'data': record,
+      };
+      final result = await punch(qr: '$_officeQr?branch_id=12');
+      expect(result.success, isTrue);
+      expect(result.distanceMeters, closeTo(25, 0.001));
+      expect(storage.values, isNotEmpty);
+      today['data'] = [record];
+      expect((await api.fetchTodayAttendance()).checkedIn, isTrue);
+    },
+  );
+
+  test(
+    'a branch 200 km away is never shown as the primary office 5 km away',
+    () async {
+      final record = _record(
+        branchLocation: '0,1.8',
+        phoneLocation: '0,0',
+        distance: 5000,
+      );
+      final compared = record['compared_values'] as Map;
+      compared['Default Location'] = '0,0.0449660803';
+      compared['Matched Branch'] = {
+        'id': 12,
+        'name': 'Far branch',
+        'location': '0,1.8',
+        'distance': 5000,
+      };
+      responseData = {
+        ..._result(),
+        'primaryLocation': '0,0.0449660803',
+        'WithPrimary': 5000,
+        'data': record,
+      };
+      final result = await punch(
+        qr: '$_officeQr?branch_id=12',
+        latitude: 0,
+        longitude: 0,
+      );
+      expect(result.success, isFalse);
+      expect(result.distanceMeters, closeTo(200150.86796, 0.01));
+      expect(result.outOfRangeMessage, contains('200.15 km'));
+      expect(result.outOfRangeMessage, contains('Far branch'));
+      expect(storage.values, isEmpty);
+    },
+  );
+
+  test(
+    'a response for another branch cannot supply the scanned branch distance',
+    () async {
+      final result = await punch(qr: '$_officeQr?branch_id=12');
+      expect(result.success, isFalse);
+      expect(result.distanceMeters, isNull);
+      expect(result.outOfRangeMessage, contains('scanned branch'));
+      expect(storage.values, isEmpty);
+    },
+  );
+
+  test(
+    'legacy responses without optional coordinates still honor server radius evidence',
+    () async {
+      responseData = {
+        ..._result(),
+        'data': _record(branchLocation: null, phoneLocation: null),
+      };
+      expect((await punch()).success, isTrue);
+    },
+  );
+
+  test('a matched branch outside its radius still rejects check-in', () async {
+    final record = _record(
+      distance: 0,
+      branchLocation: '11.54496608029594,104.9',
+      phoneLocation: '11.5,104.9',
+    );
+    (record['compared_values'] as Map)['Location Summary'] = {
+      'policyRadius': 100,
+      'WithPrimary': 5000,
+      'isCheckinRange': true,
+      'conditionalLocation': [
+        {'id': 2, 'distance': 0},
+      ],
+    };
+    responseData = {
+      ..._result(),
+      'primaryLocation': '11.54496608029594,104.9',
+      'WithPrimary': 5000,
+      'data': record,
+    };
+    final result = await punch();
+    expect(result.success, isFalse);
+    expect(result.distanceMeters, closeTo(5000, 0.001));
+    expect(storage.values, isEmpty);
+
+    today['data'] = [record];
+    final controller = PunchController(api: api);
+    await controller.fetchToday();
+    expect(controller.isCheckedIn.value, isFalse);
+  });
+
+  test(
+    'a missing primary-office distance does not block a valid matched office',
+    () async {
+      responseData = {..._result(), 'WithPrimary': null};
+      final result = await punch();
+      expect(result.success, isTrue);
+      expect(result.isInRange, isTrue);
+      expect(storage.values, isNotEmpty);
+    },
+  );
 
   test('summary-only distances include allowed secondary branches', () {
     final result = PunchResult.fromJson({
@@ -322,9 +658,9 @@ void main() {
         {'id': 2, 'distance': 40},
       ],
       'data': {
-        ..._record(),
+        ..._record(isCheckIn: false, branchLocation: null, phoneLocation: null),
         'accuracy_meter': null,
-        'compared_values': {'Check Direction': 'in'},
+        'compared_values': {'Check Direction': 'out'},
       },
     });
     expect(result.success, isTrue);
@@ -353,7 +689,7 @@ void main() {
         'compared_values': {'Check Direction': 'in'},
       },
     };
-    await expectLater(punch(), throwsA(isA<ApiException>()));
+    expect((await punch()).success, isFalse);
     expect(storage.values, isEmpty);
   });
 
@@ -446,6 +782,7 @@ void main() {
         radius: 150,
       ),
       'time': '16:55:32',
+      'check_location': '11.540200,104.85816',
       'attendance_type_id': 1,
       'late_minutes': 535,
       'early_minutes': 0,
@@ -453,6 +790,7 @@ void main() {
       'compared_values': {
         'Check Direction': 'in',
         'Work Policy': '[DS][Full Time][Full Time Employee Policy]',
+        'Default Location': '11.547273130564294,104.90898218012883',
         'Location Summary': {
           'policyRadius': 150,
           'WithPrimary': 5591.497,
@@ -539,14 +877,14 @@ void main() {
   });
 
   test(
-    'QR location and type never replace the fresh GPS and selected type',
+    'existing fixed QR values never replace fresh GPS and the selected type',
     () async {
-      await punch();
+      await punch(qr: _fixedOfficeQr);
       expect(
         Uri.decodeComponent(requests.single.uri.path),
         '/api/v1/employee/attendance/3/11.5,104.9',
       );
-      expect(requests.single.data, {'qr_code': _officeQr});
+      expect(requests.single.data, {'qr_code': _fixedOfficeQr});
     },
   );
 

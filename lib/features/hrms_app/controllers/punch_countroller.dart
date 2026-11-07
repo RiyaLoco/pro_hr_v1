@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:test_flutter/data/models/res/punch_models.dart';
@@ -10,7 +11,8 @@ import 'package:test_flutter/features/hrms_app/screens/home/widgets/qr_screen.da
 /// Today's attendance for the home card.
 ///
 /// Check in: scan the office QR code and submit the phone's GPS position.
-/// Check out: require the same QR and submit a fresh GPS position.
+/// Check out: scan a valid attendance QR and submit a fresh GPS position,
+/// including when working at another permitted branch.
 /// The server decides whether the position is inside the allowed radius.
 class PunchController extends GetxController {
   PunchController({ApiController? api}) : _api = api ?? ApiController();
@@ -128,6 +130,12 @@ class PunchController extends GetxController {
   }) async {
     try {
       final position = await _location.getCurrentPosition();
+      if (kDebugMode) {
+        debugPrint(
+          '[Attendance GPS] latitude=${position.latitude} longitude=${position.longitude} '
+          'accuracy_m=${position.accuracy} captured_at=${position.timestamp.toIso8601String()}',
+        );
+      }
       final result = await _api.recordAttendance(
         isCheckIn: isCheckIn,
         attendanceTypeId: attendanceTypeId,

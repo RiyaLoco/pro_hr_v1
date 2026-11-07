@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:test_flutter/utils/constants/colors.dart';
 import 'package:test_flutter/utils/helpers/distant_helpers.dart';
 
-
 /// UI-only stand-in for the map. Swap the painted background for a real map
 /// later (e.g. flutter_map or google_maps_flutter) and keep the distance chip.
 ///
@@ -27,7 +26,7 @@ class LocationHelpers extends StatelessWidget {
     final office = officeLatLong;
     if (user == null || office == null) return null;
     try {
-      return calculateDistance(user, office);
+      return calculateDistanceMeters(user, office);
     } on ArgumentError {
       return null;
     }
@@ -86,7 +85,7 @@ class _DistanceChip extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.12),
+            color: Colors.black.withValues(alpha: 0.12),
             blurRadius: 10,
             offset: const Offset(0, 3),
           ),
@@ -95,14 +94,22 @@ class _DistanceChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(inRange ? Icons.check_circle : Icons.warning_amber_rounded, size: 18, color: color),
+          Icon(
+            inRange ? Icons.check_circle : Icons.warning_amber_rounded,
+            size: 18,
+            color: color,
+          ),
           const SizedBox(width: 8),
           Flexible(
             child: Text(
               inRange
                   ? 'You are $_distanceText from the office'
                   : '$_distanceText from the office, outside the allowed area',
-              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: color),
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
             ),
           ),
         ],
@@ -131,14 +138,17 @@ class _RoadsPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    canvas.drawRect(Offset.zero & size, Paint()..color = const Color(0xFFD9D4C8));
+    canvas.drawRect(
+      Offset.zero & size,
+      Paint()..color = const Color(0xFFD9D4C8),
+    );
 
     final minor = Paint()
-      ..color = Colors.white.withOpacity(0.55)
+      ..color = Colors.white.withValues(alpha: 0.55)
       ..strokeWidth = 3
       ..strokeCap = StrokeCap.round;
     final major = Paint()
-      ..color = Colors.white.withOpacity(0.95)
+      ..color = Colors.white.withValues(alpha: 0.95)
       ..strokeWidth = 9
       ..strokeCap = StrokeCap.round;
 

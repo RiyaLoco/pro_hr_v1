@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:test_flutter/data/models/attendance_qr_payload.dart';
 import 'package:test_flutter/data/models/res/attendance_history_models.dart';
 import 'package:test_flutter/data/models/res/leave_request_models.dart';
 import 'package:test_flutter/data/models/res/punch_models.dart';
@@ -235,6 +236,11 @@ class ApiController {
   }) async {
     final qr = qrCode.trim();
     if (qr.isEmpty) throw ApiException('Scan the office QR code first.');
+    try {
+      AttendanceQrPayload.parse(qr);
+    } on FormatException catch (e) {
+      throw ApiException(e.message);
+    }
     final path = AppUrlService.attendanceCheckUrl(
       attendanceTypeId: attendanceTypeId,
       latitude: latitude,
@@ -257,8 +263,8 @@ class ApiController {
     }
     final response = await dio.post(
       path,
-      // The supplied Laravel check() discards the body. Keep the QR here for
-      // server-side validation once the accompanying backend patch is applied.
+      // Laravel must validate this office QR and its branch separately from
+      // check_location, which always contains the phone's fresh GPS position.
       data: {'qr_code': qr},
     );
 

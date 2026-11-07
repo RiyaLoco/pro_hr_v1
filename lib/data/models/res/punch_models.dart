@@ -55,7 +55,7 @@ class AttendanceLocationPolicy {
         summary['policyRadius'] ??
         compared['Radius Allowance(M)'];
     final radius = number(rawRadius);
-    // accuracy_meter is the nearest allowed branch distance in this API.
+    // accuracy_meter is the distance to the branch evaluated for the scan.
     // WithPrimary alone must not reject an allowed secondary branch.
     final rawDistance = record['accuracy_meter'] ?? matched['distance'];
     var distance = number(rawDistance);

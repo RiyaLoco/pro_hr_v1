@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:test_flutter/data/models/attendance_qr_payload.dart';
 import 'package:test_flutter/utils/constants/colors.dart';
 
 class QrScanScreen extends StatefulWidget {
@@ -19,18 +20,29 @@ class _QrScanScreenState extends State<QrScanScreen> {
   );
 
   bool _handled = false;
+  String? _scanError;
 
   void _onDetect(BarcodeCapture capture) {
     if (_handled) return;
 
-    final value = capture.barcodes
-        .map((b) => b.rawValue)
-        .whereType<String>()
-        .firstWhere((v) => v.trim().isNotEmpty, orElse: () => '');
-    if (value.isEmpty) return;
+    String? error;
+    for (final barcode in capture.barcodes) {
+      final value = barcode.rawValue?.trim();
+      if (value == null || value.isEmpty) continue;
+      try {
+        AttendanceQrPayload.parse(value);
+      } on FormatException catch (e) {
+        error = e.message;
+        continue;
+      }
 
-    _handled = true; // the camera can report the same code several times
-    Get.back(result: value);
+      _handled = true; // the camera can report the same code several times
+      Get.back(result: value);
+      return;
+    }
+    if (mounted && error != null && error != _scanError) {
+      setState(() => _scanError = error);
+    }
   }
 
   @override
@@ -98,12 +110,28 @@ class _QrScanScreenState extends State<QrScanScreen> {
             left: 24,
             right: 24,
             bottom: bottomInset + 48,
-            child: Text(
-              widget.isCheckIn
-                  ? 'Scan the office QR code. Use this same code to check out.'
-                  : 'Scan the same office QR code you used to check in today.',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.white70, fontSize: 14),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (_scanError != null) ...[
+                  Text(
+                    _scanError!,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: Colors.orangeAccent,
+                      fontSize: 14,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                ],
+                Text(
+                  widget.isCheckIn
+                      ? 'Scan the office QR code. Use this same code to check out.'
+                      : 'Scan the same office QR code you used to check in today.',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(color: Colors.white70, fontSize: 14),
+                ),
+              ],
             ),
           ),
         ],

@@ -1,7 +1,15 @@
 --- a/app/Http/Controllers/API/Employee/EmployeeAttendanceController.php
 +++ b/app/Http/Controllers/API/Employee/EmployeeAttendanceController.php
-@@ -223,10 +223,12 @@
- 
+@@ -8,6 +8,7 @@
+ use App\Models\Attendance\LeaveRequest;
+ use App\Models\CoreHR\Employee\Employee;
+ use App\Models\CoreHR\Organization\Branch;
++use App\Support\AttendanceQr;
+ use Carbon\Carbon;
+ use Illuminate\Http\JsonResponse;
+ use Illuminate\Http\Request;
+@@ -223,10 +224,12 @@
+
      public function check(Request $request, string $attendance_type_id, string $check_location): JsonResponse
      {
 +        $qrCode = $request->input('qr_code');
@@ -13,49 +21,213 @@
          ]);
          $input = $request->validate([
              'attendance_type_id' => ['required', 'integer', 'exists:attendance_types,id'],
-@@ -255,7 +257,9 @@
+@@ -255,17 +258,29 @@
              'latitude' => ['required_without:check_location', 'numeric', 'between:-90,90'],
              'longitude' => ['required_without:check_location', 'numeric', 'between:-180,180'],
              'check_location' => ['sometimes', 'required', 'string', 'max:100'],
--        ]);
 +            'qr_code' => ['required', 'string', 'max:4096'],
-+        ]);
-+        $qrHash = hash('sha256', trim($input['qr_code']));
+         ]);
          $location = isset($input['latitude'], $input['longitude'])
              ? $input['latitude'].','.$input['longitude']
              : ($input['check_location'] ?? '');
-@@ -265,7 +269,7 @@
+         try {
++            AttendanceQr::coordinates($location);
+             calculateDistance($location, $location);
+         } catch (\InvalidArgumentException $exception) {
              throw ValidationException::withMessages(['check_location' => $exception->getMessage()]);
          }
- 
+
 -        return DB::transaction(function () use ($request, $employeeId, $direction, $location, $input) {
-+        return DB::transaction(function () use ($request, $employeeId, $direction, $location, $input, $qrHash) {
++        try {
++            $qr = AttendanceQr::parse($input['qr_code'], rtrim((string) config('app.url'), '/').'/api/v1');
++        } catch (\InvalidArgumentException $exception) {
++            throw ValidationException::withMessages(['qr_code' => $exception->getMessage()]);
++        }
++        $qrType = AttendanceType::find($qr['attendance_type_id']);
++        if (! $qrType || ($this->direction($qrType->name) ?? $this->direction($qrType->short_name)) === null) {
++            throw ValidationException::withMessages(['qr_code' => 'The QR code does not identify a configured attendance type.']);
++        }
++
++        return DB::transaction(function () use ($request, $employeeId, $direction, $location, $input, $qr) {
              // Serialize all mobile checks for this employee, including first checks.
              $employee = Employee::query()->lockForUpdate()->find($employeeId);
              if (! $employee) {
-@@ -284,6 +288,17 @@
-             }
-             if ($direction === 'out' && ! $records->contains(fn ($record) => $this->recordDirection($record) === 'in')) {
-                 return response()->json(['success' => false, 'message' => 'Check in before checking out.'], 409);
+@@ -275,6 +290,9 @@
+             $now = now();
+             $date = $now->toDateString();
+             $type = AttendanceType::findOrFail($input['attendance_type_id']);
++            if (($this->direction($type->name) ?? $this->direction($type->short_name)) !== $direction) {
++                throw ValidationException::withMessages(['attendance_type_id' => 'Choose the attendance type for this check-in or check-out action.']);
 +            }
-+
+
+             $records = Attendance::with('type')->where('employee_id', $employeeId)
+                 ->whereDate('date', $date)
+@@ -286,32 +304,55 @@
+                 return response()->json(['success' => false, 'message' => 'Check in before checking out.'], 409);
+             }
+
 +            if ($direction === 'out') {
 +                $checkIn = $records->first(fn ($record) => $this->recordDirection($record) === 'in');
 +                $expectedQrHash = $checkIn->compared_values['QR Code Hash'] ?? null;
-+                if (! is_string($expectedQrHash) || ! hash_equals($expectedQrHash, $qrHash)) {
++                if (! is_string($expectedQrHash) || ! hash_equals($expectedQrHash, $qr['hash'])) {
 +                    return response()->json([
 +                        'success' => false,
 +                        'message' => 'Scan the same QR code you used to check in today.',
 +                    ], 422);
 +                }
-             }
- 
++            }
++
              $radius = $employee->policy?->radius_allowance;
-@@ -358,6 +373,7 @@
+-            if (! is_numeric($radius) || $radius < 0) {
++            if (! is_numeric($radius) || ! is_finite((float) $radius) || $radius < 0) {
+                 return response()->json(['success' => false, 'message' => 'The employee location policy is not configured.'], 422);
+             }
+             $branchIds = array_merge([$employee->branch_id], $employee->allow_branch ?? []);
+             $nearest = null;
+             $primaryDistance = null;
+             $conditionalLocations = [];
++            $validBranches = 0;
+             foreach (Branch::whereIn('id', $branchIds)->get() as $branch) {
+                 try {
++                    $isQrBranch = AttendanceQr::matchesBranchLocation($qr, (string) $branch->location);
+                     $distance = calculateDistance((string) $branch->location, $location);
+                 } catch (\InvalidArgumentException) {
+                     continue;
+                 }
++                if (! is_numeric($distance) || ! is_finite((float) $distance) || $distance < 0) {
++                    continue;
++                }
++                $validBranches++;
+                 if ((int) $branch->id === (int) $employee->branch_id) {
+                     $primaryDistance = $distance;
+                 }
+                 if (in_array($branch->id, $employee->allow_branch ?? [])) {
+                     $conditionalLocations[] = ['id' => $branch->id, 'location' => $branch->location, 'distance' => $distance];
+                 }
+-                if ($nearest === null || $distance < $nearest['distance']) {
++                // Only the office named by this QR can authorize this scan.
++                if ($isQrBranch && ($nearest === null || $distance < $nearest['distance'])) {
+                     $nearest = ['id' => $branch->id, 'name' => $branch->name, 'location' => $branch->location, 'distance' => $distance];
+                 }
+             }
+             if ($nearest === null) {
+-                return response()->json(['success' => false, 'message' => 'No valid attendance branch location is configured.'], 422);
++                return response()->json([
++                    'success' => false,
++                    'message' => $validBranches === 0
++                        ? 'No valid attendance branch location is configured.'
++                        : 'The QR office location is not one of your permitted attendance branches.',
++                ], 422);
+             }
+
+             $schedule = $employee->priority === 'Flexible Schedule'
+@@ -358,6 +399,9 @@
                  'compared_values' => [
                      'Location Summary' => $locationSummary,
                      'Check Direction' => $direction,
-+                    'QR Code Hash' => $qrHash,
++                    'QR Code Hash' => $qr['hash'],
++                    'QR Branch ID' => $nearest['id'],
++                    'QR Location' => $qr['location'],
                      'Work Policy' => $employee->policy->name,
                      'Check Date' => $date,
                      'Check Time' => $now->format('H:i:s'),
+--- /dev/null
++++ b/app/Support/AttendanceQr.php
+@@ -0,0 +1,97 @@
++<?php
++
++namespace App\Support;
++
++use InvalidArgumentException;
++
++/** Parses the existing office URL without making a request to its target. */
++final class AttendanceQr
++{
++    // Only compensates for decimal rounding of a configured branch coordinate.
++    // The employee's policy, not this tolerance, controls the phone GPS radius.
++    private const COORDINATE_EPSILON = 0.000001;
++
++    public static function parse(string $code, string $apiBaseUrl): array
++    {
++        $action = trim($code);
++        if ($action === '' || strlen($action) > 4096) {
++            throw new InvalidArgumentException('Scan a valid office attendance QR code.');
++        }
++        if (str_starts_with($action, 'action=')) {
++            parse_str($action, $parameters);
++            if (count($parameters) !== 1 || ! is_string($parameters['action'] ?? null)) {
++                throw new InvalidArgumentException('Scan a valid office attendance QR code.');
++            }
++            $action = trim($parameters['action']);
++        }
++
++        $api = parse_url($apiBaseUrl);
++        $url = parse_url($action);
++        if ($api === false || ! isset($api['scheme'], $api['host']) ||
++            ! in_array(strtolower($api['scheme']), ['http', 'https'], true)) {
++            throw new InvalidArgumentException('The attendance QR server URL is not configured correctly.');
++        }
++        if ($url === false || ! str_starts_with($url['path'] ?? '', '/') ||
++            isset($url['query']) || isset($url['fragment']) ||
++            isset($url['user']) || isset($url['pass'])) {
++            throw new InvalidArgumentException('This QR code is not a valid attendance action.');
++        }
++        if (isset($url['scheme']) || isset($url['host'])) {
++            $scheme = strtolower($url['scheme'] ?? '');
++            $apiScheme = strtolower($api['scheme']);
++            $port = $url['port'] ?? ($scheme === 'https' ? 443 : 80);
++            $apiPort = $api['port'] ?? ($apiScheme === 'https' ? 443 : 80);
++            if ($scheme !== $apiScheme ||
++                strtolower($url['host'] ?? '') !== strtolower($api['host']) ||
++                $port !== $apiPort) {
++                throw new InvalidArgumentException('This QR code is not for this attendance service.');
++            }
++        }
++
++        $prefix = explode('/', trim($api['path'] ?? '', '/').'/employee/attendance');
++        if ($prefix[0] === '') {
++            array_shift($prefix);
++        }
++        $segments = array_map('rawurldecode', explode('/', substr($url['path'], 1)));
++        if (count($segments) !== count($prefix) + 2 ||
++            array_slice($segments, 0, count($prefix)) !== $prefix) {
++            throw new InvalidArgumentException('This QR code is not an attendance action.');
++        }
++        $type = filter_var($segments[count($prefix)], FILTER_VALIDATE_INT, ['options' => ['min_range' => 1]]);
++        if ($type === false) {
++            throw new InvalidArgumentException('The attendance QR code has an invalid type.');
++        }
++        [$latitude, $longitude] = self::coordinates($segments[count($prefix) + 1]);
++
++        return [
++            'attendance_type_id' => $type,
++            'latitude' => $latitude,
++            'longitude' => $longitude,
++            'location' => $latitude.','.$longitude,
++            'hash' => hash('sha256', trim($code)),
++        ];
++    }
++
++    public static function coordinates(string $location): array
++    {
++        $parts = explode(',', $location);
++        if (count($parts) !== 2 || ! is_numeric(trim($parts[0])) || ! is_numeric(trim($parts[1]))) {
++            throw new InvalidArgumentException('A location must contain valid latitude,longitude coordinates.');
++        }
++        $latitude = (float) trim($parts[0]);
++        $longitude = (float) trim($parts[1]);
++        if (! is_finite($latitude) || ! is_finite($longitude) || abs($latitude) > 90 || abs($longitude) > 180) {
++            throw new InvalidArgumentException('Latitude or longitude is out of range.');
++        }
++
++        return [$latitude, $longitude];
++    }
++
++    public static function matchesBranchLocation(array $qr, string $branchLocation): bool
++    {
++        [$latitude, $longitude] = self::coordinates($branchLocation);
++
++        return abs($qr['latitude'] - $latitude) <= self::COORDINATE_EPSILON &&
++            abs($qr['longitude'] - $longitude) <= self::COORDINATE_EPSILON;
++    }
++}

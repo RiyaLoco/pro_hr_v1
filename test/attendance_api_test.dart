@@ -7,6 +7,10 @@ import 'package:test_flutter/data/services/app_url_service.dart';
 import 'package:test_flutter/data/services/attendance_qr_service.dart';
 import 'package:test_flutter/features/hrms_app/controllers/punch_countroller.dart';
 
+const _officeQr =
+    '${AppUrlService.baseUrl}/employee/attendance/1/'
+    '11.547273130564294, 104.90898218012883';
+
 class _MemoryStorage extends Fake implements GetStorage {
   final values = <String, dynamic>{};
 
@@ -106,7 +110,7 @@ void main() {
 
   Future<PunchResult> punch({
     bool isCheckIn = true,
-    String qr = 'office-qr',
+    String qr = _officeQr,
     double latitude = 11.5,
     double longitude = 104.9,
   }) => api.recordAttendance(
@@ -121,14 +125,14 @@ void main() {
     'both directions use the new route and fresh phone coordinates',
     () async {
       ApiController.setToken('attendance-token');
-      await punch(qr: '  office-qr  ');
+      await punch(qr: '  $_officeQr  ');
       final checkIn = requests.single;
       expect(checkIn.method, 'POST');
       expect(
         Uri.decodeComponent(checkIn.uri.path),
         '/api/v1/employee/attendance/3/11.5,104.9',
       );
-      expect(checkIn.data, {'qr_code': 'office-qr'});
+      expect(checkIn.data, {'qr_code': _officeQr});
       expect(checkIn.headers['Authorization'], 'Bearer attendance-token');
       expect(checkIn.queryParameters, isEmpty);
 
@@ -145,7 +149,7 @@ void main() {
         Uri.decodeComponent(requests.last.uri.path),
         '/api/v1/employee/attendance/9/11.6,104.8',
       );
-      expect(requests.last.data, {'qr_code': 'office-qr'});
+      expect(requests.last.data, {'qr_code': _officeQr});
     },
   );
 
@@ -153,7 +157,10 @@ void main() {
     await punch();
     requests.clear();
     await expectLater(
-      punch(isCheckIn: false, qr: 'other-office'),
+      punch(
+        isCheckIn: false,
+        qr: '${AppUrlService.baseUrl}/employee/attendance/1/12,105',
+      ),
       throwsA(
         isA<ApiException>().having(
           (e) => e.message,
@@ -214,7 +221,7 @@ void main() {
     await punch();
     await AttendanceQrService(
       storage: storage,
-    ).requireMatchingCheckOut(PunchRecord.fromJson(_record()), 'office-qr');
+    ).requireMatchingCheckOut(PunchRecord.fromJson(_record()), _officeQr);
   });
 
   test('another day or employee cannot reuse the saved QR', () async {
@@ -477,7 +484,7 @@ void main() {
         attendanceTypeId: 1,
         latitude: 11.540200,
         longitude: 104.85816,
-        qrCode: 'office-qr',
+        qrCode: _officeQr,
       );
       expect(result.success, isFalse);
       expect(result.record?.accepted, isFalse);
@@ -531,12 +538,57 @@ void main() {
     expect(storage.values, isEmpty);
   });
 
-  test('QR contents never replace the phone GPS location', () async {
-    await punch(qr: 'https://office.example/attendance/9/0,0?x=1');
-    expect(
-      Uri.decodeComponent(requests.single.uri.path),
-      '/api/v1/employee/attendance/3/11.5,104.9',
+  test(
+    'QR location and type never replace the fresh GPS and selected type',
+    () async {
+      await punch();
+      expect(
+        Uri.decodeComponent(requests.single.uri.path),
+        '/api/v1/employee/attendance/3/11.5,104.9',
+      );
+      expect(requests.single.data, {'qr_code': _officeQr});
+    },
+  );
+
+  test('unrelated QR codes cannot make any attendance request', () async {
+    final server = Uri.parse(AppUrlService.baseUrl).origin;
+    for (final qr in [
+      'office-qr',
+      'random QR text',
+      'https://example.com',
+      'https://office.example/api/v1/employee/attendance/1/11.5,104.9',
+      '$server/api/v1/employee/schedules/1/11.5,104.9',
+      '$server/api/v1/employee/attendance/1/91,104.9',
+      '$server/api/v1/employee/attendance/1/11.5,NaN',
+    ]) {
+      for (final isCheckIn in [true, false]) {
+        await expectLater(
+          punch(qr: qr, isCheckIn: isCheckIn),
+          throwsA(isA<ApiException>()),
+        );
+      }
+    }
+    expect(requests, isEmpty);
+    expect(storage.values, isEmpty);
+  });
+
+  test('the backend can reject an unissued QR with a valid action', () async {
+    statusCode = 422;
+    responseData = {
+      'success': false,
+      'message': 'This QR code was not issued for an allowed office.',
+    };
+    await expectLater(
+      punch(),
+      throwsA(
+        isA<ApiException>().having(
+          (e) => e.displayMessage,
+          'message',
+          'This QR code was not issued for an allowed office.',
+        ),
+      ),
     );
+    expect(storage.values, isEmpty);
   });
 
   test('attendance types preserve API IDs and read short names', () {

@@ -4,9 +4,14 @@ import 'package:test_flutter/common/widgets/app_container.dart';
 import 'package:test_flutter/utils/constants/colors.dart';
 
 class AttendanceStatsRow extends StatelessWidget {
-  const AttendanceStatsRow({super.key, required this.summary});
+  const AttendanceStatsRow({
+    super.key,
+    required this.summary,
+    this.leaveRemainingDays,
+  });
 
   final AttendanceSummary summary;
+  final double? leaveRemainingDays;
 
   String _value(double? value, String unit) =>
       value == null ? '—' : '${formatAttendanceNumber(value)}$unit';
@@ -23,7 +28,9 @@ class AttendanceStatsRow extends StatelessWidget {
           child: _statCard(_value(summary.onTimePercentage, '%'), 'ON TIME'),
         ),
         const SizedBox(width: 12),
-        Expanded(child: _statCard(_value(summary.leaveDays, 'd'), 'LEAVE')),
+        Expanded(
+          child: _statCard(_value(leaveRemainingDays, 'd'), 'LEAVE REMAIN'),
+        ),
       ],
     );
   }

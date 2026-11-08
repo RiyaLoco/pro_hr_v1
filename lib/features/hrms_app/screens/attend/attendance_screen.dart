@@ -46,7 +46,17 @@ class AttendanceScreen extends StatelessWidget {
                       WeeklyProgressCard(progress: weekly),
                       const SizedBox(height: Sizes.spaceBtwItems),
                     ],
-                    AttendanceStatsRow(summary: summary),
+                    AttendanceStatsRow(
+                      summary: summary,
+                      leaveRemainingDays: controller.leaveRemainingDays.value,
+                    ),
+                    if (controller.leaveBalanceError.value != null) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        controller.leaveBalanceError.value!,
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
                   ],
                 ),
               ),

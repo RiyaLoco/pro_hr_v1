@@ -5,6 +5,7 @@ class AppUrlService {
   static const String login = '/login';
   static const String leaveTypes = '/employee/leave-requests/types';
   static const String leaveRequests = '/employee/leave-requests';
+  static const String leaveRemainings = '/employee/leave-remainings';
   static const String recruitments = '/recruitments';
   static const String attendance = '/employee/attendance';
   static const String attendanceToday = '/employee/attendance/today';

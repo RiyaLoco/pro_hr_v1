@@ -63,13 +63,47 @@ Map<String, dynamic> _page({
   'meta': {'current_page': 1, 'last_page': 99},
 };
 
+ApiController _api() {
+  final api = ApiController();
+  api.dio.interceptors.add(
+    InterceptorsWrapper(
+      onRequest: (options, handler) {
+        if (options.path == AppUrlService.leaveRemainings) {
+          handler.resolve(
+            Response(
+              requestOptions: options,
+              statusCode: 200,
+              data: {
+                'success': true,
+                'year': 2026,
+                'data': [
+                  {
+                    'year': 2026,
+                    'leave_type_id': null,
+                    'days_entitled': '18.0',
+                    'days_used': '5.5',
+                    'days_remaining': '12.5',
+                  },
+                ],
+              },
+            ),
+          );
+        } else {
+          handler.next(options);
+        }
+      },
+    ),
+  );
+  return api;
+}
+
 void main() {
   tearDown(() => ApiController.setToken(null));
 
   test(
     'empty history still supplies summary and uses history pagination',
     () async {
-      final api = ApiController();
+      final api = _api();
       api.dio.interceptors.add(
         InterceptorsWrapper(
           onRequest: (options, handler) => handler.resolve(
@@ -84,8 +118,9 @@ void main() {
       expect(controller.hasMore.value, isFalse);
       expect(controller.summary.value?.totalHours, 0);
       expect(controller.summary.value?.onTimePercentage, isNull);
-      expect(controller.summary.value?.leaveDays, 2);
-      expect(controller.summary.value?.weeklyProgress?.hoursLabel, '0/9');
+      expect(controller.leaveRemainingDays.value, 12.5);
+      expect(controller.leaveBalanceError.value, isNull);
+      expect(controller.summary.value?.weeklyProgress?.hoursLabel, '0/40');
       expect(controller.summary.value?.weeklyProgress?.progress, 0);
     },
   );
@@ -100,7 +135,7 @@ void main() {
           body: Column(
             children: [
               WeeklyProgressCard(progress: summary.weeklyProgress!),
-              AttendanceStatsRow(summary: summary),
+              AttendanceStatsRow(summary: summary, leaveRemainingDays: 12.5),
             ],
           ),
         ),
@@ -108,30 +143,32 @@ void main() {
     );
     expect(find.text('0h'), findsOneWidget);
     expect(find.text('—'), findsOneWidget);
-    expect(find.text('2d'), findsOneWidget);
-    expect(find.text('0/9'), findsOneWidget);
-    expect(find.text('9 hours remaining this week.'), findsOneWidget);
+    expect(find.text('12.5d'), findsOneWidget);
+    expect(find.text('LEAVE REMAIN'), findsOneWidget);
+    expect(find.text('0/40'), findsOneWidget);
+    expect(find.text('40 hours remaining this week.'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
   test(
-    'weekly progress handles absent targets and clamps server percentages',
+    'weekly progress uses 40 hours with missing targets and clamps overtime',
     () {
       final none = WeeklyAttendanceProgress.fromJson({'target_hours': 0});
       expect(none.progress, 0);
+      expect(none.hoursLabel, '—/40');
       expect(none.message, 'Weekly progress is unavailable.');
       final noSchedule = WeeklyAttendanceProgress.fromJson({
         'worked_hours': 0,
         'target_hours': 0,
       });
-      expect(noSchedule.message, 'No scheduled hours this week.');
+      expect(noSchedule.message, '40 hours remaining this week.');
       final exceeded = WeeklyAttendanceProgress.fromJson({
-        'worked_hours': '12.5',
+        'worked_hours': '42.5',
         'target_hours': '9',
-        'percentage': 138.89,
+        'percentage': 472.22,
       });
       expect(exceeded.progress, 1);
-      expect(exceeded.hoursLabel, '12.5/9');
+      expect(exceeded.hoursLabel, '42.5/40');
       expect(exceeded.message, 'You have reached your weekly goal.');
     },
   );
@@ -140,7 +177,7 @@ void main() {
     'authenticated history uses the supplied endpoint and daily fields',
     () async {
       ApiController.setToken('sample-token');
-      final api = ApiController();
+      final api = _api();
       RequestOptions? sent;
       api.dio.interceptors.add(
         InterceptorsWrapper(
@@ -178,7 +215,7 @@ void main() {
   test(
     'pagination appends unique days and refresh resets to the first page',
     () async {
-      final api = ApiController();
+      final api = _api();
       final pages = <int>[];
       api.dio.interceptors.add(
         InterceptorsWrapper(
@@ -223,7 +260,7 @@ void main() {
   );
 
   test('page failure keeps data and retry requests the same page', () async {
-    final api = ApiController();
+    final api = _api();
     final pages = <int>[];
     var fail = true;
     api.dio.interceptors.add(
@@ -263,7 +300,7 @@ void main() {
   });
 
   test('failed refresh keeps records and summary and can be retried', () async {
-    final api = ApiController();
+    final api = _api();
     var fail = false;
     api.dio.interceptors.add(
       InterceptorsWrapper(
@@ -295,7 +332,7 @@ void main() {
   test(
     'malformed daily history cannot be confused with empty history',
     () async {
-      final api = ApiController();
+      final api = _api();
       Object? history = <dynamic>[];
       api.dio.interceptors.add(
         InterceptorsWrapper(
@@ -349,7 +386,7 @@ void main() {
     expect(find.text('08:00 AM'), findsOneWidget);
     expect(find.text('—'), findsOneWidget);
     expect(find.text('ON TIME'), findsOneWidget);
-    expect(find.text('9h worked'), findsOneWidget);
+    expect(record.workedHours, 9);
     expect(tester.takeException(), isNull);
   });
 }

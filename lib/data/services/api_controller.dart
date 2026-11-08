@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:test_flutter/data/models/attendance_qr_payload.dart';
 import 'package:test_flutter/data/models/res/attendance_history_models.dart';
+import 'package:test_flutter/data/models/res/leave_remaining_models.dart';
 import 'package:test_flutter/data/models/res/leave_request_models.dart';
 import 'package:test_flutter/data/models/res/overtime_models.dart';
 import 'package:test_flutter/data/models/res/payroll_model.dart';
@@ -109,6 +110,24 @@ class ApiController {
     final pages = await Future.wait(statuses.map((_fetchLeavePage)));
     return pages.expand((page) => page).toList()
       ..sort((a, b) => b.startDate.compareTo(a.startDate));
+  }
+
+  Future<List<LeaveBalance>> fetchLeaveRemaining({
+    int? year,
+    int? leaveTypeId,
+  }) async {
+    final response = await dio.get(
+      AppUrlService.leaveRemainings,
+      queryParameters: {'year': ?year, 'leave_type_id': ?leaveTypeId},
+    );
+    final body = _unwrap(response);
+    final data = body['data'];
+    if (data is! List || data.any((item) => item is! Map<String, dynamic>)) {
+      throw const FormatException('Expected leave balances in a data list.');
+    }
+    return data
+        .map((item) => LeaveBalance.fromJson(item as Map<String, dynamic>))
+        .toList();
   }
 
   Future<List<LeaveRequest>> _fetchLeavePage(String? status) async {

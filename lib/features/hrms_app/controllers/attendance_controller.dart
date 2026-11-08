@@ -11,6 +11,8 @@ class AttendanceController extends GetxController {
   final RxBool isLoading = false.obs;
   final RxnString errorMessage = RxnString();
   final Rxn<AttendanceSummary> summary = Rxn<AttendanceSummary>();
+  final RxnDouble leaveRemainingDays = RxnDouble();
+  final RxnString leaveBalanceError = RxnString();
   final RxBool isLoadingMore = false.obs;
   final RxBool hasMore = false.obs;
   final RxnString loadMoreError = RxnString();
@@ -33,12 +35,30 @@ class AttendanceController extends GetxController {
       summary.value = result.summary;
       _currentPage = result.currentPage;
       hasMore.value = result.hasMore;
+      if (result.summary != null) {
+        await _fetchLeaveRemaining();
+      }
     } on ApiException catch (e) {
       errorMessage.value = e.displayMessage;
     } catch (_) {
       errorMessage.value = 'Could not load attendance. Please try again.';
     } finally {
       isLoading.value = false;
+    }
+  }
+
+  Future<void> _fetchLeaveRemaining() async {
+    leaveBalanceError.value = null;
+    try {
+      final balances = await _api.fetchLeaveRemaining();
+      leaveRemainingDays.value = balances.fold<double>(
+        0,
+        (total, balance) => total + balance.daysRemaining,
+      );
+    } catch (_) {
+      leaveRemainingDays.value = null;
+      leaveBalanceError.value =
+          'Could not load remaining leave. Pull down to retry.';
     }
   }
 

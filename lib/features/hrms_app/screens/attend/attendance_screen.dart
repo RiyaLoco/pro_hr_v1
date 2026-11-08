@@ -4,6 +4,7 @@ import 'package:test_flutter/common/widgets/app_refresh_scroll_view.dart';
 import 'package:test_flutter/common/widgets/custom_sliver_appbar.dart';
 import 'package:test_flutter/common/widgets/section_header.dart';
 import 'package:test_flutter/features/hrms_app/controllers/attendance_controller.dart';
+import 'package:test_flutter/features/hrms_app/screens/attend/attendance_detail_screen.dart';
 import 'package:test_flutter/features/hrms_app/screens/attend/widgets/history_card.dart';
 import 'package:test_flutter/features/hrms_app/screens/attend/widgets/attend_stats_row.dart';
 import 'package:test_flutter/features/hrms_app/screens/attend/widgets/weekly_progress_card.dart';
@@ -101,13 +102,17 @@ class AttendanceScreen extends StatelessWidget {
             return SliverPadding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
               sliver: SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) => Padding(
+                delegate: SliverChildBuilderDelegate((context, index) {
+                  final record = controller.records[index];
+                  return Padding(
                     padding: const EdgeInsets.only(bottom: Sizes.spaceBtwItems),
-                    child: HistoryCard(controller.records[index]),
-                  ),
-                  childCount: controller.records.length,
-                ),
+                    child: HistoryCard(
+                      record,
+                      onTap: () =>
+                          Get.to(() => AttendanceDetailScreen(record: record)),
+                    ),
+                  );
+                }, childCount: controller.records.length),
               ),
             );
           }),

@@ -29,7 +29,7 @@ class YearToDateCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '\$${controller.yearToDateEarning.value.toStringAsFixed(2)}',
+                    '៛${controller.yearToDateEarning.value.toStringAsFixed(2)}',
                     style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: PColor.primary),
                   ),
                 ],

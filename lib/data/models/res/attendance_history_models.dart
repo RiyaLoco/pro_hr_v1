@@ -1,6 +1,7 @@
 import 'package:intl/intl.dart';
 
 import 'attendance_summary_models.dart';
+import 'punch_models.dart';
 
 /// One daily entry from `history`, rather than an individual punch event.
 class AttendanceRecord {
@@ -12,6 +13,7 @@ class AttendanceRecord {
     this.workedHours,
     this.lateMinutes,
     this.earlyMinutes,
+    this.events = const [],
   });
 
   final String date;
@@ -21,14 +23,15 @@ class AttendanceRecord {
   final double? workedHours;
   final int? lateMinutes;
   final int? earlyMinutes;
+  final List<PunchRecord> events;
 
   String get dateLabel {
     final parsed = DateTime.tryParse(date);
     return parsed == null ? date : DateFormat('MMM d, yyyy').format(parsed);
   }
 
-  String get checkInLabel => _clock(checkIn);
-  String get checkOutLabel => _clock(checkOut);
+  String get checkInLabel => formatTime(checkIn);
+  String get checkOutLabel => formatTime(checkOut);
   String get statusLabel => status.replaceAll('_', ' ').toUpperCase();
 
   factory AttendanceRecord.fromJson(Map<String, dynamic> json) {
@@ -51,6 +54,13 @@ class AttendanceRecord {
           (minutes == null ? null : minutes / 60),
       lateMinutes: int.tryParse('${json['late_minutes']}'),
       earlyMinutes: int.tryParse('${json['early_minutes']}'),
+      events: json['events'] is List
+          ? List<PunchRecord>.unmodifiable(
+              (json['events'] as List).whereType<Map<String, dynamic>>().map(
+                PunchRecord.fromJson,
+              ),
+            )
+          : const [],
     );
   }
 
@@ -59,7 +69,7 @@ class AttendanceRecord {
     return number != null && number.isFinite ? number : null;
   }
 
-  static String _clock(String? time) {
+  static String formatTime(String? time) {
     if (time == null || time.trim().isEmpty) return '—';
     final parts = time.trim().split(':');
     final hour = int.tryParse(parts.first);
@@ -111,7 +121,8 @@ class AttendanceHistoryPage {
     final summary = json['summary'];
     return AttendanceHistoryPage(
       records: history
-          .map((row) => AttendanceRecord.fromJson(row as Map<String, dynamic>)).where((record){
+          .map((row) => AttendanceRecord.fromJson(row as Map<String, dynamic>))
+          .where((record) {
             final status = record.status.trim().toLowerCase();
             return status == 'on_time' || status == 'late';
           })

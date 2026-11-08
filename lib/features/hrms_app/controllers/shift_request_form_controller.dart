@@ -88,6 +88,7 @@ class ShiftRequestFormController extends GetxController {
       Get.snackbar('Submitted', 'Your shift request was sent for approval.');
     } on ApiException catch (e) {
       Get.snackbar('Could not submit', e.displayMessage);
+      print('API error: ${e.displayMessage}');
     } catch (_) {
       Get.snackbar('Could not submit', 'Check your connection and try again.');
     } finally {

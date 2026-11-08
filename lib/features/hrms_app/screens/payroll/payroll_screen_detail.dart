@@ -3,6 +3,7 @@ import 'package:get/get_core/src/get_main.dart';
 import 'package:get/get_instance/src/extension_instance.dart';
 import 'package:test_flutter/common/widgets/app_container.dart';
 import 'package:test_flutter/common/widgets/custom_sliver_appbar.dart';
+import 'package:test_flutter/data/models/res/payroll_model.dart';
 import 'package:test_flutter/features/hrms_app/controllers/payroll_controller.dart';
 import 'package:test_flutter/utils/constants/colors.dart';
 
@@ -83,7 +84,7 @@ class PayslipDetailScreen extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '\$${payslip.netTakeHome.toStringAsFixed(2)}',
+                '៛${payslip.netTakeHome.toStringAsFixed(2)}',
                 style: TextStyle(fontSize: 30, fontWeight: FontWeight.bold, color: PColor.primary),
               ),
               Material(
@@ -146,7 +147,7 @@ class PayslipDetailScreen extends StatelessWidget {
                 style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: PColor.primary),
               ),
               Text(
-                '\$${payslip.totalGross.toStringAsFixed(2)}',
+                '៛${payslip.totalGross.toStringAsFixed(2)}',
                 style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: PColor.primary),
               ),
             ],
@@ -203,7 +204,7 @@ class PayslipDetailScreen extends StatelessWidget {
                 style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: _deductionColor),
               ),
               Text(
-                '-\$${payslip.totalDeductions.toStringAsFixed(2)}',
+                '-៛${payslip.totalDeductions.toStringAsFixed(2)}',
                 style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: _deductionColor),
               ),
             ],
@@ -230,7 +231,7 @@ class _LineItemRow extends StatelessWidget {
         children: [
           Text(item.label, style: TextStyle(fontSize: 14, color: PColor.textColor)),
           Text(
-            '${isDeduction ? '-' : ''}\$${item.amount.toStringAsFixed(2)}',
+            '${isDeduction ? '-' : ''}៛${item.amount.toStringAsFixed(2)}',
             style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: color),
           ),
         ],

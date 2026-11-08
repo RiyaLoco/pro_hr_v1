@@ -157,7 +157,7 @@ class _FilterPill extends StatelessWidget {
           child: Text(
             label,
             style: TextStyle(
-              fontSize: 14,
+              fontSize: 13,
               fontWeight: FontWeight.w600,
               color: isSelected ? Colors.white : PColor.primary,
             ),
@@ -224,12 +224,13 @@ class _RequestCard extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Expanded(
                 child: _ShiftBlock(label: 'Current', name: request.oldShiftName, time: request.oldTime),
               ),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 8,vertical: 18),
                 child: Icon(Icons.arrow_forward, size: 20, color: PColor.primary),
               ),
               Expanded(
@@ -250,8 +251,9 @@ class _RequestCard extends StatelessWidget {
           _ProgressSteps(status: request.status),
           if (_footer.isNotEmpty) ...[
             const SizedBox(height: 12),
-            Text(_footer, style: TextStyle(fontSize: 12, height: 1.4, color: Colors.grey[500])),
+            Text(_footer, style: TextStyle(fontSize: 12, height: 1.4, color: PColor.textColor)),
           ],
+          const SizedBox(height: 12),
           if (isPending)
             Align(
               alignment: Alignment.centerRight,
@@ -259,13 +261,6 @@ class _RequestCard extends StatelessWidget {
                 final cancelling = controller.cancellingId.value == request.id;
                 return TextButton.icon(
                   onPressed: cancelling ? null : () => controller.cancel(request),
-                  icon: cancelling
-                      ? const SizedBox(
-                          width: 14,
-                          height: 14,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.close, size: 16, color: Colors.redAccent),
                   label: const Text(
                     'Cancel request',
                     style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w600),
@@ -291,11 +286,11 @@ class _ShiftBlock extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: TextStyle(fontSize: 11, color: Colors.grey[500])),
+        Text(label, style: TextStyle(fontSize: 11, color: PColor.textColor)),
         const SizedBox(height: 2),
         Text(
           name,
-          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.black87),
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: PColor.primary),
         ),
         if (time.isNotEmpty)
           Text(time, style: TextStyle(fontSize: 12, color: PColor.textColor)),
@@ -337,7 +332,7 @@ class _ProgressSteps extends StatelessWidget {
                 height: 2,
                 margin: const EdgeInsets.only(top: 8, left: 4, right: 4),
                 color: steps[i + 1].$2 == _StepState.upcoming
-                    ? Colors.grey[300]
+                    ? PColor.textColor.withOpacity(0.3)
                     : PColor.primary.withOpacity(0.6),
               ),
             ),
@@ -392,7 +387,7 @@ class _StepDot extends StatelessWidget {
           style: TextStyle(
             fontSize: 11,
             fontWeight: state == _StepState.upcoming ? FontWeight.normal : FontWeight.w600,
-            color: state == _StepState.upcoming ? Colors.grey[500] : Colors.black87,
+            color: state == _StepState.upcoming ? PColor.textColor : PColor.primary,
           ),
         ),
       ],

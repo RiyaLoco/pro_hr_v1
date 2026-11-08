@@ -1,7 +1,7 @@
 class AppUrlService {
   AppUrlService._();
 
-  static const String baseUrl = 'http://192.168.1.11:8000/api/v1';
+  static const String baseUrl = 'http://192.168.1.4:8000/api/v1';
   static const String login = '/login';
   static const String leaveTypes = '/employee/leave-requests/types';
   static const String leaveRequests = '/employee/leave-requests';
@@ -12,8 +12,9 @@ class AppUrlService {
       '/employee/attendance/{attendance_type_id}/{check_location}';
   static const String attendanceTypes = '/employee/attendance/types';
   static const String schedules = '/employee/schedules';
-  static const String shiftOptions = '/employee/shifts';
+  static const String shiftOptions = '/employee/shift-requests/shifts';
   static const String shiftRequests = '/employee/shift-requests';
+  static const String payrolls = '/employee/payrolls';
 
   /// The location is always the phone's GPS position, never QR contents.
   static String attendanceCheckUrl({
@@ -90,4 +91,5 @@ class AppUrlService {
     }
     return '${serverUri.toString()}/$relativePath';
   }
+  
 }

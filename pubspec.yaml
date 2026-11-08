@@ -51,6 +51,7 @@ dependencies:
   google_maps_flutter: ^2.18.1
   mobile_scanner: ^7.4.2
   geolocator: ^14.0.1
+  flutter_launcher_icons: ^0.14.4
 
 
 dev_dependencies:
@@ -66,7 +67,10 @@ dev_dependencies:
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
-
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon/telnet icon.jpg"
 # The following section is specific to Flutter packages.
 flutter:
 

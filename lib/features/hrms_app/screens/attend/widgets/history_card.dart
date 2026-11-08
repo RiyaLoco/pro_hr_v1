@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:test_flutter/common/widgets/app_container.dart';
 import 'package:test_flutter/data/models/res/attendance_history_models.dart';
+import 'package:test_flutter/data/models/res/attendance_summary_models.dart';
 import 'package:test_flutter/utils/constants/colors.dart';
 
 class HistoryCard extends StatelessWidget {
   final AttendanceRecord record;
-  const HistoryCard(this.record, {super.key});
+  final VoidCallback? onTap;
+  const HistoryCard(this.record, {super.key, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -13,6 +15,7 @@ class HistoryCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 18),
       borderRadius: 16,
+      onTap: onTap,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -60,14 +63,9 @@ class HistoryCard extends StatelessWidget {
             children: [
               _time(Icons.login, 'Check in', record.checkInLabel),
               _time(Icons.logout, 'Check out', record.checkOutLabel),
-              // if (record.workedHours != null)
-              //   Text('${formatAttendanceNumber(record.workedHours!)}h worked'),
-              // if ((record.lateMinutes ?? 0) > 0)
-              //   Text('${record.lateMinutes} min late'),
-              // if ((record.earlyMinutes ?? 0) > 0)
-              //   Text('${record.earlyMinutes} min early'),
             ],
           ),
+          
         ],
       ),
     );

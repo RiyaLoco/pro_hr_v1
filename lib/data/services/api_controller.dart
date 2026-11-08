@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:test_flutter/data/models/attendance_qr_payload.dart';
 import 'package:test_flutter/data/models/res/attendance_history_models.dart';
 import 'package:test_flutter/data/models/res/leave_request_models.dart';
+import 'package:test_flutter/data/models/res/payroll_model.dart';
 import 'package:test_flutter/data/models/res/punch_models.dart';
 import 'package:test_flutter/data/models/res/recruitment_models.dart';
 import 'package:test_flutter/data/models/res/schedule_models.dart';
@@ -32,6 +33,18 @@ class ApiController {
             },
           ),
         )
+        // ..interceptors.add(
+        //   InterceptorsWrapper(
+        //     onRequest: (options, handler) {
+        //       options.headers['Accept'] = 'application/json';
+        //       final token = _token;
+        //       if (token != null && token.isNotEmpty) {
+        //         options.headers['Authorization'] = 'Bearer $token';
+        //       }
+        //       handler.next(options);
+        //     },
+        //   ),
+        // );
         ..interceptors.add(
           InterceptorsWrapper(
             onRequest: (options, handler) {
@@ -42,8 +55,19 @@ class ApiController {
               }
               handler.next(options);
             },
+            onError: (error, handler) {
+              final response = error.response;
+              final isLogin = error.requestOptions.path == AppUrlService.login;
+ 
+              if (response != null && !isLogin) {
+                handler.resolve(response);
+              } else {
+                handler.next(error);
+              }
+            },
           ),
         );
+        
 
   Future<UserModels> login(String email, String password) async {
     try {
@@ -397,6 +421,17 @@ class ApiController {
   Future<void> cancelShiftRequest(int id) async {
     final response = await dio.delete('${AppUrlService.shiftRequests}/$id');
     _unwrap(response);
+  }
+
+   Future<List<Payslip>> fetchPayslips({int perPage = 100}) async {
+    final response = await dio.get(
+      AppUrlService.payrolls,
+      queryParameters: {'per_page': perPage},
+    );
+    final body = _unwrap(response);
+    return (body['data'] as List)
+        .map((e) => Payslip.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 }
 

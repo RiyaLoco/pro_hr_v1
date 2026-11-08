@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:test_flutter/data/models/res/payroll_model.dart';
 import 'package:test_flutter/features/hrms_app/controllers/payroll_controller.dart';
 import 'package:test_flutter/features/hrms_app/screens/payroll/payroll_screen_detail.dart';
 import 'package:test_flutter/utils/constants/colors.dart';
@@ -98,7 +99,7 @@ class _PayslipTile extends StatelessWidget {
                           style: TextStyle(fontSize: 12, color: Colors.grey[500], fontWeight: FontWeight.w500),
                         ),
                         TextSpan(
-                          text: '\$${payslip.listNet.toStringAsFixed(0)}',
+                          text: '៛${payslip.listNet.toStringAsFixed(0)}',
                           style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: PColor.primary),
                         ),
                       ],
@@ -113,7 +114,7 @@ class _PayslipTile extends StatelessWidget {
                         ),
                         if (payslip.listGross != null)
                           TextSpan(
-                            text: '\$${payslip.listGross!.toStringAsFixed(0)}',
+                            text: '៛${payslip.listGross!.toStringAsFixed(0)}',
                             style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: PColor.primary),
                           ),
                       ],

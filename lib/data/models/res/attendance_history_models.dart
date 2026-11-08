@@ -50,7 +50,7 @@ class AttendanceRecord {
           ? json['status'].toString().trim()
           : 'unknown',
       workedHours:
-          _number(json['worked_hours']) ??
+          _number(json['worked_hours'] - 1) ??
           (minutes == null ? null : minutes / 60),
       lateMinutes: int.tryParse('${json['late_minutes']}'),
       earlyMinutes: int.tryParse('${json['early_minutes']}'),

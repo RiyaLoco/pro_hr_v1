@@ -97,18 +97,29 @@ class OvertimeRequestScreen extends StatelessWidget {
                             ),
                           ),
                   ),
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: PColor.primary,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 16),
+                  Obx(
+                    () => SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: PColor.primary,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                        onPressed: controller.isSubmitting.value
+                            ? null
+                            : controller.submit,
+                        child: controller.isSubmitting.value
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  color: Colors.white,
+                                ),
+                              )
+                            : const Text('Submit request'),
                       ),
-                      onPressed: () {
-                        if (controller.savePreview()) Get.back();
-                      },
-                      child: const Text('Save preview request'),
                     ),
                   ),
                 ],

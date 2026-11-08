@@ -22,7 +22,7 @@ class AttendanceSummary {
   factory AttendanceSummary.fromJson(Map<String, dynamic> json) {
     final weekly = json['weekly_progress'];
     return AttendanceSummary(
-      totalHours: _number(json['total_hours']),
+      totalHours: _number(json['total_hours']- 1),
       onTimePercentage: _number(json['on_time_percentage']),
       leaveDays: _number(json['leave_days']),
       weeklyProgress: weekly is Map<String, dynamic>

@@ -24,9 +24,9 @@ class EntryList extends StatelessWidget {
       if (entries.isEmpty) {
         return const SliverToBoxAdapter(
           child: Padding(
-            padding: EdgeInsets.all(32),
+            padding: EdgeInsets.symmetric(vertical: 80),
             child: Center(
-              child: Text('No overtime requests match your search.'),
+              child: Text('No overtime requests match your search.',style: TextStyle(color: PColor.textColor),),
             ),
           ),
         );

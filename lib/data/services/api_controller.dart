@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:test_flutter/data/models/attendance_qr_payload.dart';
 import 'package:test_flutter/data/models/res/attendance_history_models.dart';
 import 'package:test_flutter/data/models/res/leave_request_models.dart';
+import 'package:test_flutter/data/models/res/overtime_models.dart';
 import 'package:test_flutter/data/models/res/payroll_model.dart';
 import 'package:test_flutter/data/models/res/punch_models.dart';
 import 'package:test_flutter/data/models/res/recruitment_models.dart';
@@ -432,6 +433,77 @@ class ApiController {
     return (body['data'] as List)
         .map((e) => Payslip.fromJson(e as Map<String, dynamic>))
         .toList();
+  }
+
+  List<T> _parseRows<T>(List data, T Function(Map<String, dynamic>) parse) {
+    final rows = <T>[];
+    for (final row in data) {
+      if (row is! Map<String, dynamic>) continue;
+      try {
+        rows.add(parse(row));
+      } on FormatException catch (e) {
+        debugPrint('Skipped a malformed row: ${e.message}');
+      }
+    }
+    return rows;
+  }
+ 
+  Future<List<OtRate>> fetchOvertimeRates() async {
+    final response = await dio.get(AppUrlService.overtimeRates);
+    final body = _unwrap(response);
+    final data = body['data'];
+    if (data is! List) {
+      throw ApiException('The server did not return a list of overtime rates.');
+    }
+    return _parseRows(data, OtRate.fromJson);
+  }
+ 
+  /// One page of the employee's overtime requests (newest date first) and
+  /// the number of the last page.
+  Future<({List<OtRequest> items, int lastPage})> fetchOvertimePage({
+    int page = 1,
+    int perPage = 100,
+  }) async {
+    final response = await dio.get(
+      AppUrlService.overtimeRequests,
+      queryParameters: {'page': page, 'per_page': perPage},
+    );
+    final body = _unwrap(response);
+    final data = body['data'];
+    if (data is! List) {
+      throw ApiException('The server did not return a list of overtime requests.');
+    }
+ 
+    final meta = body['meta'];
+    return (
+      items: _parseRows(data, OtRequest.fromJson),
+      lastPage: meta is Map ? int.tryParse('${meta['last_page']}') ?? 1 : 1,
+    );
+  }
+ 
+  /// [date] is 'yyyy-MM-dd'; [startTime] / [endTime] are 'HH:mm:ss'.
+  /// The API requires the end to be after the start on the same day, and
+  /// [hours] to equal that difference rounded to 2 decimals.
+  Future<void> submitOvertimeRequest({
+    required String date,
+    required String startTime,
+    required String endTime,
+    required double hours,
+    required int otRateId,
+    String? reason,
+  }) async {
+    final response = await dio.post(
+      AppUrlService.overtimeRequests,
+      data: {
+        'date': date,
+        'start_time': startTime,
+        'end_time': endTime,
+        'hours': hours,
+        'ot_rate_id': otRateId,
+        if (reason != null && reason.trim().isNotEmpty) 'reason': reason.trim(),
+      },
+    );
+    _unwrap(response);
   }
 }
 

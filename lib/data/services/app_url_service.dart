@@ -15,6 +15,8 @@ class AppUrlService {
   static const String shiftOptions = '/employee/shift-requests/shifts';
   static const String shiftRequests = '/employee/shift-requests';
   static const String payrolls = '/employee/payrolls';
+  static const String overtimeRequests = '/employee/ot-requests';
+  static const String overtimeRates = '/employee/ot-requests/rates';
 
   /// The location is always the phone's GPS position, never QR contents.
   static String attendanceCheckUrl({
@@ -91,5 +93,4 @@ class AppUrlService {
     }
     return '${serverUri.toString()}/$relativePath';
   }
-  
 }

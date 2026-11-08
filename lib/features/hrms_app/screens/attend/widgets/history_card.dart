@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:test_flutter/common/widgets/app_container.dart';
 import 'package:test_flutter/data/models/res/attendance_history_models.dart';
-import 'package:test_flutter/data/models/res/attendance_summary_models.dart';
 import 'package:test_flutter/utils/constants/colors.dart';
 
 class HistoryCard extends StatelessWidget {

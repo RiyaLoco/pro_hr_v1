@@ -10,6 +10,10 @@ class HistoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final statusColor = record.status.trim().toLowerCase() == 'late'
+        ? PColor.pendingColor
+        : PColor.primary;
+
     return AppContainer(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 18),
@@ -39,15 +43,15 @@ class HistoryCard extends StatelessWidget {
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: PColor.primary.withValues(alpha: 0.15),
+                    color: statusColor.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     record.statusLabel,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.bold,
-                      color: PColor.primary,
+                      color: statusColor,
                     ),
                   ),
                 ),
@@ -64,7 +68,6 @@ class HistoryCard extends StatelessWidget {
               _time(Icons.logout, 'Check out', record.checkOutLabel),
             ],
           ),
-          
         ],
       ),
     );

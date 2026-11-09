@@ -1,7 +1,7 @@
 class AppUrlService {
   AppUrlService._();
 
-  static const String baseUrl = 'http://192.168.1.14:8000/api/v1';
+  static const String baseUrl = 'http://192.168.1.4:8000/api/v1';
   static const String login = '/login';
   static const String leaveTypes = '/employee/leave-requests/types';
   static const String leaveRequests = '/employee/leave-requests';

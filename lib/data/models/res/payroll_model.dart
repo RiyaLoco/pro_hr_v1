@@ -1,11 +1,31 @@
 const List<String> _months = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
+  'January',
+  'February',
+  'March',
+  'April',
+  'May',
+  'June',
+  'July',
+  'August',
+  'September',
+  'October',
+  'November',
+  'December',
 ];
 
 const List<String> _shortMonths = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  'Jan',
+  'Feb',
+  'Mar',
+  'Apr',
+  'May',
+  'Jun',
+  'Jul',
+  'Aug',
+  'Sep',
+  'Oct',
+  'Nov',
+  'Dec',
 ];
 
 /// Decimal columns arrive as strings like "350.00".
@@ -32,7 +52,8 @@ DateTime? _parseDateTime(dynamic raw) {
 }
 
 /// '10 Jul 2026'
-String _formatDate(DateTime d) => '${d.day} ${_shortMonths[d.month - 1]} ${d.year}';
+String _formatDate(DateTime d) =>
+    '${d.day} ${_shortMonths[d.month - 1]} ${d.year}';
 
 /// '1 – 31 Jul 2026', '26 Jun – 25 Jul 2026'
 String _periodLabel(DateTime? from, DateTime? to) {
@@ -77,7 +98,13 @@ String _normalizeStatus(dynamic raw) {
 
 /// payroll_details.type -> is this row a deduction?
 /// ADJUST: put the words your admin uses for deductions in this list.
-const List<String> _deductionWords = ['deduct', 'minus', 'tax', 'less', 'advance'];
+const List<String> _deductionWords = [
+  'deduct',
+  'minus',
+  'tax',
+  'less',
+  'advance',
+];
 
 bool _isDeduction(String? type) {
   final value = (type ?? '').toLowerCase();
@@ -107,6 +134,11 @@ class Payslip {
   final double? listGross;
   final String paidOnLabel; // 'Paid on 10 Jul 2026' (verb follows the status)
   final double netTakeHome;
+  final double salaryAdvance;
+  final double taxAmount;
+
+  /// Total of details with type "Additional/Allowance".
+  final double addition;
   final List<PayslipLineItem> earnings;
   final List<PayslipLineItem> deductions;
   final DateTime? periodEnd;
@@ -121,28 +153,41 @@ class Payslip {
     this.listGross,
     required this.paidOnLabel,
     required this.netTakeHome,
+    this.addition = 0,
     required this.earnings,
     required this.deductions,
     this.periodEnd,
+    this.salaryAdvance = 0,
+    this.taxAmount = 0,
   });
 
   double get totalGross => earnings.fold(0, (sum, item) => sum + item.amount);
 
-  double get totalDeductions => deductions.fold(0, (sum, item) => sum + item.amount);
+  // double get totalDeductions =>
+  //     deductions.fold(0, (sum, item) => sum + item.amount);
+  double get totalDeductions => salaryAdvance - taxAmount;
 
   /// Only these are shown to the employee.
-  bool get isReleased => const {'Approved', 'Acknowledged', 'Paid'}.contains(status);
+  bool get isReleased =>
+      const {'Approved', 'Acknowledged', 'Paid'}.contains(status);
 
   factory Payslip.fromJson(Map<String, dynamic> json) {
     final earnings = <PayslipLineItem>[];
     final deductions = <PayslipLineItem>[];
+    var detailAddition = 0.0;
+    var hasAllowanceDetails = false;
 
     final details = json['details'];
     if (details is List) {
       for (final row in details.whereType<Map>()) {
         final label = _text(row['attr_name']) ?? 'Item';
         final amount = _money(row['amount']);
-        if (_isDeduction(_text(row['type']))) {
+        final type = _text(row['type']);
+        if (type?.toLowerCase() == 'additional/allowance') {
+          hasAllowanceDetails = true;
+          detailAddition += amount;
+        }
+        if (_isDeduction(type)) {
           deductions.add(PayslipLineItem(label: label, amount: amount.abs()));
         } else {
           earnings.add(PayslipLineItem(label: label, amount: amount));
@@ -152,11 +197,22 @@ class Payslip {
 
     // ---- Columns on the payroll itself, unless already a detail row ----
     final basic = _money(json['basic_salary']);
+    final addition = json['addition'] == null
+        ? detailAddition
+        : _money(json['addition']);
     final tax = _money(json['tax']);
     final advance = _money(json['advanced_amount']);
 
     if (basic > 0 && !_hasLabel(earnings, 'basic')) {
-      earnings.insert(0, PayslipLineItem(label: 'Basic Salary', amount: basic));
+      earnings.insert(0, PayslipLineItem(label: 'Basic Salary', amount: advance));
+      // earnings.insert(0, PayslipLineItem(label: 'Basic Salary', amount: advance));
+    }
+    // The API aggregate is the sum of these detail rows, so only add a
+    // summary line when the individual allowances are not present.
+    if (addition != 0 && !hasAllowanceDetails) {
+      earnings.add(
+        PayslipLineItem(label: 'Additional/Allowance', amount: addition),
+      );
     }
     if (tax > 0 && !_hasLabel(deductions, 'tax')) {
       deductions.insert(0, PayslipLineItem(label: 'Tax', amount: tax));
@@ -202,14 +258,23 @@ class Payslip {
     final net = _money(json['net_salary']);
     final payslip = Payslip(
       id: int.tryParse('${json['id']}') ?? 0,
-      month: periodEnd == null ? 'Payslip' : '${_months[periodEnd.month - 1]} ${periodEnd.year}',
+      month: periodEnd == null
+          ? 'Payslip'
+          : '${_months[periodEnd.month - 1]} ${periodEnd.year}',
       periodLabel: _periodLabel(from, to),
       status: status,
-      processedLabel: processed == null ? 'Processed' : 'Processed on ${_formatDate(processed)}',
+      processedLabel: processed == null
+          ? 'Processed'
+          : 'Processed on ${_formatDate(processed)}',
       listNet: net,
       listGross: null, // set below, once the lines are known
-      paidOnLabel: statusDate == null ? '' : '$verb on ${_formatDate(statusDate)}',
+      paidOnLabel: statusDate == null
+          ? ''
+          : '$verb on ${_formatDate(statusDate)}',
       netTakeHome: net,
+      addition: addition,
+      salaryAdvance: advance,
+      taxAmount: tax,
       earnings: earnings,
       deductions: deductions,
       periodEnd: periodEnd,
@@ -227,6 +292,9 @@ class Payslip {
             listGross: gross,
             paidOnLabel: payslip.paidOnLabel,
             netTakeHome: payslip.netTakeHome,
+            addition: payslip.addition,
+            salaryAdvance: payslip.salaryAdvance,
+            taxAmount: payslip.taxAmount,
             earnings: earnings,
             deductions: deductions,
             periodEnd: periodEnd,

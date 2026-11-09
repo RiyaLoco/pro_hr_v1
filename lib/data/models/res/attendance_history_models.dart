@@ -122,10 +122,11 @@ class AttendanceHistoryPage {
     return AttendanceHistoryPage(
       records: history
           .map((row) => AttendanceRecord.fromJson(row as Map<String, dynamic>))
-          .where((record) {
-            final status = record.status.trim().toLowerCase();
-            return status == 'on_time' || status == 'late';
-          })
+          // .where((record) {
+          //   final status = record.status.trim().toLowerCase();
+          //   return status == 'on_time' || status == 'late';
+          // })  
+          .where((record) => record.status.trim().toLowerCase() != 'failed')
           .toList(),
       summary: summary is Map<String, dynamic>
           ? AttendanceSummary.fromJson(summary)
